@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import { OracleRouter } from "../src/oracle/OracleRouter.sol";
+import { IOracleRouter } from "../src/interfaces/IOracleRouter.sol";
 import { MockOracleAdapter } from "../src/oracle/MockOracleAdapter.sol";
-import { AggregatedPrice, OraclePrice } from "../src/types/DataTypes.sol";
+import { AggregatedPrice, OraclePrice, OracleSource } from "../src/types/DataTypes.sol";
 
 contract OracleRouterTest is Test {
     OracleRouter public router;
@@ -126,7 +127,7 @@ contract OracleRouterTest is Test {
     function test_revert_no_valid_sources() public {
         bytes32 emptyMarket = keccak256("EMPTY");
 
-        vm.expectRevert(OracleRouter.NoValidSources.selector);
+        vm.expectRevert(IOracleRouter.NoValidSources.selector);
         router.getAggregatedPrice(emptyMarket);
     }
 
@@ -213,7 +214,7 @@ contract OracleRouterTest is Test {
             block.timestamp - MAX_STALENESS - 1
         );
 
-        vm.expectRevert(OracleRouter.StalePrice.selector);
+        vm.expectRevert(IOracleRouter.StalePrice.selector);
         router.getPrimaryPrice(XAU_USD);
     }
 
@@ -228,7 +229,7 @@ contract OracleRouterTest is Test {
 
         router.addSource(newMarket, address(newOracle), WAD, true);
 
-        OracleRouter.OracleSource[] memory sources = router.getSources(newMarket);
+        OracleSource[] memory sources = router.getSources(newMarket);
         assertEq(sources.length, 1, "Should have 1 source");
         assertEq(sources[0].source, address(newOracle), "Should be new oracle");
         assertTrue(sources[0].isPrimary, "Should be primary");
@@ -237,7 +238,7 @@ contract OracleRouterTest is Test {
     function test_remove_source() public {
         router.removeSource(XAU_USD, address(mockOracle3));
 
-        OracleRouter.OracleSource[] memory sources = router.getSources(XAU_USD);
+        OracleSource[] memory sources = router.getSources(XAU_USD);
         assertEq(sources.length, 2, "Should have 2 sources after removal");
     }
 
@@ -245,7 +246,7 @@ contract OracleRouterTest is Test {
         uint256 newWeight = WAD / 2;
         router.updateSource(XAU_USD, address(mockOracle2), newWeight, true);
 
-        OracleRouter.OracleSource[] memory sources = router.getSources(XAU_USD);
+        OracleSource[] memory sources = router.getSources(XAU_USD);
 
         bool found = false;
         for (uint i = 0; i < sources.length; i++) {

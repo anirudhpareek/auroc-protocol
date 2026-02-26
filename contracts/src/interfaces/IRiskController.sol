@@ -90,6 +90,11 @@ interface IRiskController {
     /// @param marketId Market identifier
     function updateRiskParams(bytes32 marketId) external;
 
+    /// @notice Update current OI for a market
+    /// @param marketId Market identifier
+    /// @param oi Current open interest
+    function updateOI(bytes32 marketId, int256 oi) external;
+
     /// @notice Set close-only mode
     /// @param marketId Market identifier
     /// @param closeOnly True to enable close-only

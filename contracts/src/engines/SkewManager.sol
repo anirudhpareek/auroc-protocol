@@ -130,7 +130,7 @@ contract SkewManager is Ownable2Step {
     ) external view returns (uint256 slippageReward) {
         // Check if skew is significant enough
         int256 skewRatio = getSkewRatio(marketId);
-        if (MathLib.abs(skewRatio) < int256(minSkewForIncentive)) {
+        if (MathLib.abs(skewRatio) < minSkewForIncentive) {
             return 0;
         }
 
@@ -177,7 +177,7 @@ contract SkewManager is Ownable2Step {
     ) external view returns (bool eligible) {
         // Must meet minimum skew threshold
         int256 skewRatio = getSkewRatio(marketId);
-        if (MathLib.abs(skewRatio) < int256(minSkewForIncentive)) {
+        if (MathLib.abs(skewRatio) < minSkewForIncentive) {
             return false;
         }
 
@@ -247,7 +247,7 @@ contract SkewManager is Ownable2Step {
 
         // Check eligibility at time of open
         int256 skewRatio = getSkewRatio(marketId);
-        bool meetsThreshold = MathLib.abs(skewRatio) >= int256(minSkewForIncentive);
+        bool meetsThreshold = MathLib.abs(skewRatio) >= minSkewForIncentive;
         (bool balances, ) = wouldBalanceSkew(marketId, sizeDelta);
 
         bool eligible = meetsThreshold && balances;

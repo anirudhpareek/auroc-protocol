@@ -260,6 +260,6 @@ contract FundingEngine is IFundingEngine, Ownable2Step {
         state.lastRate = currentRate;
         state.lastUpdateTime = block.timestamp;
 
-        emit FundingUpdated(marketId, currentRate, state.cumulativeFunding);
+        emit FundingRateUpdated(marketId, currentRate, state.cumulativeFunding);
     }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import { IndexEngine } from "../src/engines/IndexEngine.sol";
+import { IIndexEngine } from "../src/interfaces/IIndexEngine.sol";
 import { OracleRouter } from "../src/oracle/OracleRouter.sol";
 import { MockOracleAdapter } from "../src/oracle/MockOracleAdapter.sol";
 import { Regime, MarketState, TransitionState } from "../src/types/DataTypes.sol";
@@ -66,7 +67,7 @@ contract IndexEngineTest is Test {
 
     function test_regime_transition_emits_event() public {
         vm.expectEmit(true, false, false, true);
-        emit IndexEngine.RegimeChanged(XAU_USD, Regime.OFF_HOURS, Regime.OPEN, block.timestamp);
+        emit IIndexEngine.RegimeChanged(XAU_USD, Regime.OFF_HOURS, Regime.OPEN, block.timestamp);
 
         indexEngine.setRegime(XAU_USD, Regime.OPEN);
     }
@@ -287,7 +288,7 @@ contract IndexEngineTest is Test {
 
     function test_unauthorized_cannot_start_transition() public {
         vm.prank(address(0xdead));
-        vm.expectRevert(IndexEngine.UnauthorizedCaller.selector);
+        vm.expectRevert(IIndexEngine.UnauthorizedCaller.selector);
         indexEngine.startTransition(XAU_USD, TRANSITION_DURATION);
     }
 
