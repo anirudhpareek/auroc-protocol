@@ -1,6 +1,6 @@
-# 24/7 RWA Perp DEX
+# Auroc Protocol
 
-A GMX-style vault-counterparty perpetual DEX for **Real World Assets** (gold, equities, indices) that runs 24/7 on Arbitrum Sepolia.
+A vault-counterparty perpetual DEX for **Real World Assets** (gold, equities, indices) that runs 24/7 on Arbitrum Sepolia. Trade traditional markets around the clock with synthetic pricing during off-hours and confidence-aware risk controls.
 
 ## Overview
 
