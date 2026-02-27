@@ -426,14 +426,16 @@ contract LiquidationEngine is ILiquidationEngine, Ownable2Step, ReentrancyGuard 
         Position memory pos = perpEngine.getPosition(positionId);
         PositionEquity memory equity = perpEngine.getPositionEquity(positionId);
 
-        // Calculate shortfall
-        uint256 shortfall = equity.totalEquity < 0 ? uint256(-equity.totalEquity) : 0;
+        // Calculate shortfall (scale from WAD to USDC decimals)
+        uint256 shortfall = equity.totalEquity < 0 ? uint256(-equity.totalEquity) / 1e12 : 0;
 
         // Try to cover from insurance fund
         uint256 covered = 0;
         if (shortfall > 0 && address(insuranceFund) != address(0)) {
             covered = insuranceFund.coverShortfall(positionId, shortfall);
             if (covered > 0) {
+                // Transfer received USDC to Vault
+                collateral.safeTransfer(address(vault), covered);
                 vault.coverShortfall(covered);
                 emit InsuranceUsed(positionId, covered);
             }

@@ -109,6 +109,20 @@ interface IVault {
     /// @param pnl PnL amount (positive = trader profit, negative = trader loss)
     function settlePnL(bytes32 marketId, address trader, int256 pnl) external;
 
+    /// @notice Settle a closed position - returns margin +/- PnL to trader
+    /// @param marketId Market identifier
+    /// @param trader Trader address
+    /// @param margin Original margin amount (in collateral decimals)
+    /// @param pnlWad PnL in WAD (can be negative)
+    /// @param feeWad Fee in WAD
+    function settlePosition(
+        bytes32 marketId,
+        address trader,
+        uint256 margin,
+        int256 pnlWad,
+        uint256 feeWad
+    ) external;
+
     /// @notice Collect trading fees (called by PerpEngine)
     /// @param marketId Market identifier
     /// @param amount Fee amount

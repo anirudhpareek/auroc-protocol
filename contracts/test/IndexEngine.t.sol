@@ -24,6 +24,9 @@ contract IndexEngineTest is Test {
     address public keeper = address(0x1234);
 
     function setUp() public {
+        // Warp to a reasonable timestamp to avoid underflow issues
+        vm.warp(1000000);
+
         // Deploy oracle infrastructure
         oracleRouter = new OracleRouter(120, 60, 3, 1e16);
         mockOracle = new MockOracleAdapter();
@@ -91,6 +94,9 @@ contract IndexEngineTest is Test {
         // Warp past transition
         vm.warp(block.timestamp + TRANSITION_DURATION + 1);
 
+        // Set fresh price after warp (old price is now stale)
+        mockOracle.setPrice(XAU_USD, 2000 * WAD, WAD, WAD);
+
         // Update market to complete transition
         indexEngine.updateMarket(XAU_USD);
 
@@ -99,8 +105,16 @@ contract IndexEngineTest is Test {
     }
 
     function test_stress_auto_activation() public {
-        // Set low confidence price
-        mockOracle.setPrice(XAU_USD, 2000 * WAD, 2e17, WAD); // 20% confidence
+        // OracleRouter computes confidence from C_age * C_disp * C_src
+        // With 1 source vs target 3: C_src = 1/3 ≈ 0.33
+        // With fresh timestamp: C_age = 1, C_disp = 1
+        // So confidence = 0.33, which is > STRESS_THRESHOLD (0.30)
+        //
+        // To trigger STRESS, we need confidence < 0.30
+        // Set an old timestamp to reduce C_age: if age = 90s of 120s max, C_age = 0.25
+        // Then confidence = 0.25 * 1 * 0.33 ≈ 0.083 < 0.30
+        uint256 oldTimestamp = block.timestamp - 90; // 90 seconds old
+        mockOracle.setPriceWithTimestamp(XAU_USD, 2000 * WAD, WAD, WAD, oldTimestamp);
 
         indexEngine.updateMarket(XAU_USD);
 
@@ -172,13 +186,14 @@ contract IndexEngineTest is Test {
         // At start, should be mostly synthetic
         uint256 priceAtStart = indexEngine.getIndexPrice(XAU_USD);
 
-        // At midpoint
+        // At midpoint - set fresh price after warp (old price becomes stale)
         vm.warp(block.timestamp + TRANSITION_DURATION / 2);
-        mockOracle.setPrice(XAU_USD, primaryPrice, WAD, WAD); // Primary now available
+        mockOracle.setPrice(XAU_USD, primaryPrice, WAD, WAD); // Fresh price after warp
         uint256 priceAtMid = indexEngine.getIndexPrice(XAU_USD);
 
-        // At end
+        // At end - set fresh price again after warp
         vm.warp(block.timestamp + TRANSITION_DURATION / 2);
+        mockOracle.setPrice(XAU_USD, primaryPrice, WAD, WAD); // Fresh price after warp
         uint256 priceAtEnd = indexEngine.getIndexPrice(XAU_USD);
 
         // Price should ramp from syn to primary

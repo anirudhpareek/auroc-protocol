@@ -100,13 +100,17 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
     function getSharePrice() public view override returns (uint256) {
         if (totalShares == 0) return INITIAL_SHARE_PRICE;
 
-        // Share price = (totalAssets - locked + unrealizedPnL) / totalShares
-        // unrealizedPnL is what traders would get if closed now
+        // Share price = (totalAssets - unrealizedPnL) / totalShares
+        // unrealizedPnL is what traders would get if closed now (in WAD)
         // If unrealizedPnL > 0, vault owes traders => lower share price
         // If unrealizedPnL < 0, traders owe vault => higher share price
-        int256 netAssets = int256(totalAssets) - unrealizedPnL;
+
+        // Scale totalAssets to WAD first
+        int256 scaledAssets = int256(_scaleToWad(totalAssets));
+        int256 netAssets = scaledAssets - unrealizedPnL;
         if (netAssets <= 0) return 0; // Vault is insolvent
 
+        // Both netAssets and totalShares are in WAD scale
         return (uint256(netAssets) * WAD) / totalShares;
     }
 
@@ -158,7 +162,8 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
     /// @inheritdoc IVault
     function previewDeposit(uint256 amount) public view override returns (uint256) {
         if (totalShares == 0) {
-            return amount; // 1:1 for first deposit
+            // First deposit: shares = scaled amount (WAD scale)
+            return _scaleToWad(amount);
         }
         uint256 sharePrice = getSharePrice();
         if (sharePrice == 0) return 0;
@@ -173,9 +178,10 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
         if (totalShares == 0 || _shares == 0) return 0;
 
         uint256 sharePrice = getSharePrice();
+        // rawAmount is in WAD (shares are in WAD, sharePrice is WAD)
         uint256 rawAmount = (_shares * sharePrice) / WAD;
 
-        // Scale back to collateral decimals
+        // Scale back to collateral decimals (e.g., from 18 to 6 decimals)
         return _scaleFromWad(rawAmount);
     }
 
@@ -220,9 +226,13 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
 
         // Check liquidity
         uint256 available = totalAssets > lockedCollateral ? totalAssets - lockedCollateral : 0;
-        if (amountToReturn > available) revert InsufficientLiquidity();
 
-        // Ensure minimum liquidity remains
+        // Cap amountToReturn to available (handles rounding edge cases)
+        if (amountToReturn > available) {
+            amountToReturn = available;
+        }
+
+        // Ensure minimum liquidity remains (only if not withdrawing all)
         if (totalAssets - amountToReturn < minLiquidity && totalShares - _shares > 0) {
             revert InsufficientLiquidity();
         }
@@ -288,6 +298,57 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
         emit PnLSettled(marketId, pnl, trader);
     }
 
+    /// @notice Settle a closed position - returns margin +/- PnL to trader
+    /// @param marketId Market identifier
+    /// @param trader Trader address
+    /// @param margin Original margin amount (in collateral decimals)
+    /// @param pnlWad PnL in WAD (can be negative)
+    /// @param feeWad Fee in WAD
+    function settlePosition(
+        bytes32 marketId,
+        address trader,
+        uint256 margin,
+        int256 pnlWad,
+        uint256 feeWad
+    ) external onlyEngine {
+        // Scale PnL and fee from WAD to collateral decimals
+        int256 pnlScaled = pnlWad / int256(1e12);
+        uint256 feeScaled = feeWad / 1e12;
+
+        // Net return to trader: margin + pnl - fee
+        int256 netReturn = int256(margin) + pnlScaled - int256(feeScaled);
+
+        if (netReturn > 0) {
+            // Trader gets some amount back
+            uint256 returnAmount = uint256(netReturn);
+
+            // Check vault has enough
+            if (returnAmount > totalAssets) {
+                revert InsufficientLiquidity();
+            }
+
+            // If net return < margin, LPs gained the difference
+            // If net return > margin, LPs lost the difference
+            if (netReturn > int256(margin)) {
+                // Profit: LPs pay (netReturn - margin) = (pnl - fee)
+                totalAssets -= (returnAmount - margin);
+            } else {
+                // Loss: LPs gain (margin - netReturn) = -(pnl - fee) = (loss + fee)
+                totalAssets += (margin - returnAmount);
+            }
+
+            collateral.safeTransfer(trader, returnAmount);
+        } else {
+            // Complete loss - trader gets nothing, LPs gain full margin
+            totalAssets += margin;
+        }
+
+        // Update unrealized PnL tracking (net of fee)
+        unrealizedPnL -= (pnlWad - int256(feeWad));
+
+        emit PnLSettled(marketId, pnlWad - int256(feeWad), trader);
+    }
+
     /// @inheritdoc IVault
     function collectFees(bytes32 marketId, uint256 amount) external override onlyEngine {
         totalFeesCollected += amount;
@@ -307,8 +368,9 @@ contract Vault is IVault, Ownable2Step, ReentrancyGuard, Pausable {
 
     /// @inheritdoc IVault
     function coverShortfall(uint256 amount) external override onlyEngine {
-        // Receive funds from InsuranceFund to cover shortfall
-        collateral.safeTransferFrom(msg.sender, address(this), amount);
+        // Funds should already be transferred to vault, just update accounting
+        // Verify the balance is sufficient
+        require(collateral.balanceOf(address(this)) >= totalAssets + amount, "INSUFFICIENT_BALANCE");
         totalAssets += amount;
     }
 

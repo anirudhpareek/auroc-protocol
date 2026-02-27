@@ -110,7 +110,7 @@ library MathLib {
         // Add back the exponent * ln(2)
         // ln(2) ~= 0.693147e18
         int256 ln2 = 693147180559945309;
-        result = result + mulWadInt(exponent, ln2) / WAD_INT;
+        result = result + mulWadInt(exponent, ln2);
 
         return result;
     }

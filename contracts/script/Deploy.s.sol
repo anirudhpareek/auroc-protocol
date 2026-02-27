@@ -8,6 +8,7 @@ import { IndexEngine } from "../src/engines/IndexEngine.sol";
 import { RiskController } from "../src/engines/RiskController.sol";
 import { FundingEngine } from "../src/engines/FundingEngine.sol";
 import { LiquidationEngine } from "../src/engines/LiquidationEngine.sol";
+import { SkewManager } from "../src/engines/SkewManager.sol";
 import { Vault } from "../src/core/Vault.sol";
 import { PerpEngine } from "../src/core/PerpEngine.sol";
 import { InsuranceFund } from "../src/core/InsuranceFund.sol";
@@ -144,15 +145,23 @@ contract Deploy is Script {
         );
         console.log("LiquidationEngine deployed:", address(liquidationEngine));
 
+        // 10. Deploy Skew Manager
+        SkewManager skewManager = new SkewManager(
+            1e17,  // minSkewForIncentive
+            3e15,  // positiveSlippageRate
+            1e17   // lossRebateRate
+        );
+        console.log("SkewManager deployed:", address(skewManager));
+
         // ============================================
         // CONFIGURATION
         // ============================================
 
-        // Configure oracle sources
-        mockOracle.addMarkets(_marketIds());
-        for (uint i = 0; i < _marketIds().length; i++) {
-            oracleRouter.addSource(_marketIds()[i], address(mockOracle), WAD, true);
-        }
+        // Configure oracle sources - add each market individually
+        mockOracle.addMarket(XAU_USD);
+        mockOracle.addMarket(SPX_USD);
+        oracleRouter.addSource(XAU_USD, address(mockOracle), WAD, true);
+        oracleRouter.addSource(SPX_USD, address(mockOracle), WAD, true);
 
         // Register markets with Index Engine
         indexEngine.registerMarket(XAU_USD, Regime.OFF_HOURS);
@@ -215,6 +224,7 @@ contract Deploy is Script {
         console.log("PerpEngine:", address(perpEngine));
         console.log("FundingEngine:", address(fundingEngine));
         console.log("LiquidationEngine:", address(liquidationEngine));
+        console.log("SkewManager:", address(skewManager));
         console.log("========================\n");
     }
 

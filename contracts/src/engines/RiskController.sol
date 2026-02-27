@@ -167,8 +167,14 @@ contract RiskController is IRiskController, Ownable2Step {
 
         // Check leverage
         if (margin > 0 && isIncrease) {
-            uint256 notional = MathLib.abs(sizeDelta);
-            uint256 leverage = notional * WAD / margin;
+            // Get mark price to calculate actual notional value
+            uint256 markPrice = indexEngine.getMarkPrice(marketId);
+            // notional (WAD) = |size| * price / WAD
+            uint256 notional = MathLib.abs(sizeDelta).mulWad(markPrice);
+            // Scale margin from 6 decimals (USDC) to WAD (18 decimals)
+            uint256 marginWAD = margin * 1e12;
+            // leverage = notional / margin (both in WAD)
+            uint256 leverage = notional * WAD / marginWAD;
             if (leverage > params.effectiveLeverage) {
                 return (false, "Exceeds max leverage");
             }

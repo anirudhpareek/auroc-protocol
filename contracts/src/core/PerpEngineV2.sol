@@ -219,7 +219,9 @@ contract PerpEngineV2 is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
         // Check leverage
         uint256 notional = MathLib.abs(sizeDelta).mulWad(execPrice);
         RiskParams memory riskParams = riskController.getRiskParams(marketId);
-        if (margin == 0 || (notional * WAD / margin) > riskParams.effectiveLeverage) {
+        // Scale margin from 6 decimals (USDC) to WAD (18 decimals) for leverage calculation
+        uint256 marginWAD = margin * 1e12;
+        if (margin == 0 || (notional * WAD / marginWAD) > riskParams.effectiveLeverage) {
             revert ExceedsLeverage();
         }
 
@@ -526,9 +528,11 @@ contract PerpEngineV2 is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
 
         uint256 markPrice = indexEngine.getMarkPrice(pos.marketId);
 
+        // Unrealized PnL (in WAD)
         int256 priceDiff = int256(markPrice) - int256(pos.entryPrice);
         int256 unrealizedPnL = (priceDiff * pos.size) / int256(WAD);
 
+        // Funding PnL (in WAD)
         int256 fundingPnL = 0;
         if (address(fundingEngine) != address(0)) {
             int256 currentFunding = fundingEngine.getCumulativeFunding(pos.marketId);
@@ -536,8 +540,11 @@ contract PerpEngineV2 is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
             fundingPnL = -(fundingDelta * pos.size) / int256(WAD);
         }
 
-        int256 totalEquity = int256(pos.margin) + unrealizedPnL + fundingPnL;
+        // Total equity (scale margin from 6 decimals to WAD for calculation)
+        int256 marginWAD = int256(pos.margin) * 1e12;
+        int256 totalEquity = marginWAD + unrealizedPnL + fundingPnL;
 
+        // Maintenance requirement (in WAD)
         uint256 notional = MathLib.abs(pos.size).mulWad(markPrice);
         uint256 mmr = notional.mulWad(market.maintenanceMargin);
 

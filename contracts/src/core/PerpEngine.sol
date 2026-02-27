@@ -191,7 +191,9 @@ contract PerpEngine is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
         // Check leverage
         uint256 notional = MathLib.abs(sizeDelta).mulWad(execPrice);
         RiskParams memory riskParams = riskController.getRiskParams(marketId);
-        if (margin == 0 || (notional * WAD / margin) > riskParams.effectiveLeverage) {
+        // Scale margin from 6 decimals (USDC) to WAD (18 decimals) for leverage calculation
+        uint256 marginWAD = margin * 1e12;
+        if (margin == 0 || (notional * WAD / marginWAD) > riskParams.effectiveLeverage) {
             revert ExceedsLeverage();
         }
 
@@ -495,11 +497,11 @@ contract PerpEngine is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
 
         uint256 markPrice = indexEngine.getMarkPrice(pos.marketId);
 
-        // Unrealized PnL
+        // Unrealized PnL (in WAD)
         int256 priceDiff = int256(markPrice) - int256(pos.entryPrice);
         int256 unrealizedPnL = (priceDiff * pos.size) / int256(WAD);
 
-        // Funding PnL
+        // Funding PnL (in WAD)
         int256 fundingPnL = 0;
         if (address(fundingEngine) != address(0)) {
             int256 currentFunding = fundingEngine.getCumulativeFunding(pos.marketId);
@@ -507,10 +509,12 @@ contract PerpEngine is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
             fundingPnL = -(fundingDelta * pos.size) / int256(WAD);
         }
 
-        // Total equity
-        int256 totalEquity = int256(pos.margin) + unrealizedPnL + fundingPnL;
+        // Total equity (scale margin from 6 decimals to WAD for calculation)
+        // margin is in collateral decimals (6), PnL values are in WAD (18)
+        int256 marginWAD = int256(pos.margin) * 1e12;
+        int256 totalEquity = marginWAD + unrealizedPnL + fundingPnL;
 
-        // Maintenance requirement
+        // Maintenance requirement (in WAD)
         uint256 notional = MathLib.abs(pos.size).mulWad(markPrice);
         uint256 mmr = notional.mulWad(market.maintenanceMargin);
 
@@ -574,31 +578,45 @@ contract PerpEngine is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
         // Get close price (opposite direction)
         (uint256 closePrice, , ) = getExecutionPrice(pos.marketId, -closeSize);
 
-        // Calculate PnL
+        // Calculate PnL (in WAD)
         int256 priceDiff = int256(closePrice) - int256(pos.entryPrice);
-        int256 pnl = (priceDiff * closeSize) / int256(WAD);
+        int256 pnlWad = (priceDiff * closeSize) / int256(WAD);
 
-        // Calculate fee
+        // Calculate fee (in WAD)
         uint256 notional = MathLib.abs(closeSize).mulWad(closePrice);
-        uint256 fee = _calculateFee(pos.marketId, notional, false);
+        uint256 feeWad = _calculateFee(pos.marketId, notional, false);
 
-        // Net return to trader
-        int256 netReturn = int256(pos.margin) + pnl - int256(fee);
+        // Scale to USDC decimals
+        int256 pnlScaled = pnlWad / int256(1e12);
+        uint256 feeScaled = feeWad / 1e12;
+
+        // Net return to trader: margin + pnl - fee (all in USDC decimals)
+        int256 netReturn = int256(pos.margin) + pnlScaled - int256(feeScaled);
 
         // Check min received
         if (netReturn > 0 && uint256(netReturn) < minReceived) {
             revert SlippageExceeded();
         }
 
-        // Unlock collateral
+        // Unlock collateral from Vault accounting
         vault.unlockCollateral(pos.margin);
 
-        // Settle PnL with vault
-        vault.settlePnL(pos.marketId, recipient, pnl - int256(fee));
+        // Settlement: Vault holds the margin, so we need to:
+        // 1. For profit: Vault pays margin + profit - fee to trader
+        // 2. For loss: Vault pays max(0, margin - loss - fee) to trader
+        //
+        // settlePnL handles the transfer. We pass the NET result (pnl - fee)
+        // and it will compute what to transfer to trader or keep for LPs.
 
-        // Collect fee
-        if (fee > 0) {
-            vault.collectFees(pos.marketId, fee);
+        // For profits: pnl > fee, settlePnL sends (margin + profit) and deducts (margin + profit - fee) net
+        // For losses: pnl < 0, settlePnL sends trader their remaining margin after loss + fee
+
+        // We use a modified settlePnL that handles the full return including margin
+        vault.settlePosition(pos.marketId, recipient, pos.margin, pnlWad, feeWad);
+
+        // Fee tracking
+        if (feeWad > 0) {
+            vault.collectFees(pos.marketId, feeWad);
         }
 
         // Update OI
@@ -608,7 +626,7 @@ contract PerpEngine is IPerpEngine, Ownable2Step, ReentrancyGuard, Pausable {
         // Remove position
         _removePosition(positionId, pos.trader);
 
-        emit PositionClosed(positionId, recipient, pnl, closePrice);
+        emit PositionClosed(positionId, recipient, pnlWad, closePrice);
     }
 
     /// @dev Remove position from storage
