@@ -36,26 +36,28 @@ export function MarketSelector({
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[var(--bg-surface)]/60 backdrop-blur-sm">
       {/* Header */}
       <div className="p-4 border-b border-[var(--border-subtle)]">
-        <h2 className="text-[var(--text-sm)] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+        <h2 className="text-[var(--text-2xs)] font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-3">
           Markets
         </h2>
         <div className="relative">
           <input
             type="text"
-            placeholder="Search markets..."
+            placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               "w-full h-9 pl-9 pr-3",
-              "bg-[var(--bg-elevated)]",
-              "border border-[var(--border-default)]",
+              "bg-[var(--bg-void)]",
+              "border border-[var(--border-subtle)]",
               "rounded-[var(--radius-md)]",
               "text-[var(--text-sm)]",
               "placeholder:text-[var(--text-muted)]",
-              "focus:outline-none focus:border-[var(--accent-primary)]"
+              "focus:outline-none focus:border-[var(--accent-primary)]",
+              "focus:shadow-[0_0_0_3px_var(--accent-primary-subtle)]",
+              "transition-all duration-200"
             )}
           />
           <svg
@@ -77,7 +79,7 @@ export function MarketSelector({
       {/* Market List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="p-4 space-y-2">
+          <div className="p-3 space-y-2">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -90,7 +92,7 @@ export function MarketSelector({
             No markets found
           </div>
         ) : (
-          <div className="p-2">
+          <div className="p-2 space-y-1">
             {filteredMarkets.map((market) => (
               <MarketItem
                 key={market.id}
@@ -119,18 +121,21 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-3 mb-1",
+        "w-full p-3",
         "rounded-[var(--radius-md)]",
         "text-left",
-        "transition-colors duration-[var(--transition-fast)]",
+        "transition-all duration-200",
         isSelected
-          ? "bg-[var(--bg-active)] border border-[var(--accent-primary)]"
+          ? "bg-[var(--accent-primary-subtle)] border border-[var(--accent-primary)] shadow-[0_0_12px_-4px_var(--accent-primary-glow)]"
           : "bg-transparent hover:bg-[var(--bg-hover)] border border-transparent"
       )}
     >
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text-base)] font-semibold">
+          <span className={cn(
+            "text-[var(--text-sm)] font-semibold tracking-tight",
+            isSelected && "text-[var(--accent-primary)]"
+          )}>
             {market.symbol}
           </span>
           <RegimeBadge regime={market.regime} />
@@ -138,12 +143,15 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="price-display text-[var(--text-lg)]">
+        <span className={cn(
+          "price-display text-[var(--text-lg)] font-semibold",
+          isPositive ? "price-up" : "price-down"
+        )}>
           ${market.price}
         </span>
         <span
           className={cn(
-            "text-[var(--text-sm)] tabular-nums font-medium",
+            "text-[var(--text-xs)] tabular-nums font-semibold",
             isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
           )}
         >
@@ -152,11 +160,11 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
         </span>
       </div>
 
-      <div className="flex items-center justify-between mt-1">
-        <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
+      <div className="flex items-center justify-between mt-1.5">
+        <span className="text-[var(--text-2xs)] text-[var(--text-muted)]">
           {market.name}
         </span>
-        <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
+        <span className="text-[var(--text-2xs)] text-[var(--text-muted)] tabular-nums">
           Vol: ${market.volume24h}
         </span>
       </div>
@@ -182,7 +190,7 @@ export function MarketInfo({
 }: MarketInfoProps) {
   if (!market) {
     return (
-      <div className="h-14 flex items-center px-4 border-b border-[var(--border-subtle)]">
+      <div className="h-16 flex items-center px-4 border-b border-[var(--border-subtle)]">
         <div className="skeleton h-6 w-32" />
       </div>
     );
@@ -191,23 +199,26 @@ export function MarketInfo({
   const isPositive = market.change24h >= 0;
 
   return (
-    <div className="h-14 flex items-center gap-6 px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-x-auto">
+    <div className="h-16 flex items-center gap-6 px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 backdrop-blur-sm overflow-x-auto">
       {/* Symbol & Price */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text-lg)] font-semibold">
+          <span className="text-[var(--text-lg)] font-bold tracking-tight">
             {market.symbol}
           </span>
           <RegimeBadge regime={market.regime} />
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="price-display text-[var(--text-xl)] font-semibold">
+          <span className={cn(
+            "price-display text-[var(--text-2xl)] font-bold tracking-tight",
+            isPositive ? "price-up" : "price-down"
+          )}>
             ${market.price}
           </span>
           <span
             className={cn(
-              "text-[var(--text-sm)] tabular-nums font-medium",
+              "text-[var(--text-sm)] tabular-nums font-semibold",
               isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
             )}
           >
@@ -218,7 +229,7 @@ export function MarketInfo({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-[var(--border-subtle)]" />
+      <div className="h-8 w-px bg-[var(--border-default)]" />
 
       {/* Stats */}
       <div className="flex items-center gap-6 flex-shrink-0">
@@ -230,7 +241,7 @@ export function MarketInfo({
           suffix="%"
           highlight={fundingRate ? parseFloat(fundingRate) > 0 : undefined}
         />
-        <InfoStat label="Next Funding" value={nextFunding || "00:42:15"} />
+        <InfoStat label="Next Funding" value={nextFunding || "00:42:15"} mono />
       </div>
     </div>
   );
@@ -242,19 +253,22 @@ interface InfoStatProps {
   prefix?: string;
   suffix?: string;
   highlight?: boolean;
+  mono?: boolean;
 }
 
-function InfoStat({ label, value, prefix, suffix, highlight }: InfoStatProps) {
+function InfoStat({ label, value, prefix, suffix, highlight, mono }: InfoStatProps) {
   return (
     <div className="flex flex-col">
-      <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
+      <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-wider">
         {label}
       </span>
       <span
         className={cn(
-          "text-[var(--text-sm)] tabular-nums font-medium",
+          "text-[var(--text-sm)] font-medium",
+          mono ? "font-mono" : "tabular-nums",
           highlight === true && "text-[var(--color-long)]",
-          highlight === false && "text-[var(--color-short)]"
+          highlight === false && "text-[var(--color-short)]",
+          highlight === undefined && "text-[var(--text-primary)]"
         )}
       >
         {prefix}

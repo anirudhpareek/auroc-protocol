@@ -60,9 +60,9 @@ export function TabsList({ children, className }: TabsListProps) {
     <div
       role="tablist"
       className={cn(
-        "flex items-center gap-1",
+        "flex items-center gap-0.5",
         "p-1 rounded-[var(--radius-md)]",
-        "bg-[var(--bg-elevated)]",
+        "bg-[var(--bg-void)]",
         "border border-[var(--border-subtle)]",
         className
       )}
@@ -96,12 +96,12 @@ export function TabsTrigger({
       onClick={() => setActiveTab(value)}
       className={cn(
         "flex-1 px-3 py-1.5",
-        "text-[var(--text-sm)] font-medium",
+        "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
         "rounded-[var(--radius-sm)]",
-        "transition-colors duration-[var(--transition-fast)]",
+        "transition-all duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]",
         isActive
-          ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm"
+          ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
           : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]",
         disabled && "opacity-50 cursor-not-allowed",
         className
@@ -148,20 +148,21 @@ export function LongShortTabs({ value, onChange, className }: ToggleTabsProps) {
       className={cn(
         "flex gap-1 p-1",
         "rounded-[var(--radius-md)]",
-        "bg-[var(--bg-elevated)]",
+        "bg-[var(--bg-void)]",
+        "border border-[var(--border-subtle)]",
         className
       )}
     >
       <button
         onClick={() => onChange("long")}
         className={cn(
-          "flex-1 py-2 px-4",
-          "text-[var(--text-sm)] font-semibold",
+          "flex-1 py-2.5 px-4",
+          "text-[var(--text-xs)] font-bold uppercase tracking-wider",
           "rounded-[var(--radius-sm)]",
-          "transition-all duration-[var(--transition-fast)]",
+          "transition-all duration-200",
           value === "long"
-            ? "bg-[var(--color-long)] text-white shadow-[var(--shadow-glow-long)]"
-            : "text-[var(--text-muted)] hover:text-[var(--color-long)]"
+            ? "bg-[var(--color-long)] text-[var(--bg-void)] shadow-[var(--glow-long)]"
+            : "text-[var(--text-muted)] hover:text-[var(--color-long)] hover:bg-[var(--color-long-subtle)]"
         )}
       >
         Long
@@ -169,13 +170,13 @@ export function LongShortTabs({ value, onChange, className }: ToggleTabsProps) {
       <button
         onClick={() => onChange("short")}
         className={cn(
-          "flex-1 py-2 px-4",
-          "text-[var(--text-sm)] font-semibold",
+          "flex-1 py-2.5 px-4",
+          "text-[var(--text-xs)] font-bold uppercase tracking-wider",
           "rounded-[var(--radius-sm)]",
-          "transition-all duration-[var(--transition-fast)]",
+          "transition-all duration-200",
           value === "short"
-            ? "bg-[var(--color-short)] text-white shadow-[var(--shadow-glow-short)]"
-            : "text-[var(--text-muted)] hover:text-[var(--color-short)]"
+            ? "bg-[var(--color-short)] text-white shadow-[var(--glow-short)]"
+            : "text-[var(--text-muted)] hover:text-[var(--color-short)] hover:bg-[var(--color-short-subtle)]"
         )}
       >
         Short

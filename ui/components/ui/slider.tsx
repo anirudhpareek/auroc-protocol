@@ -39,12 +39,12 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
         {(label || showValue) && (
           <div className="flex items-center justify-between">
             {label && (
-              <span className="text-[var(--text-sm)] text-[var(--text-secondary)]">
+              <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest font-medium">
                 {label}
               </span>
             )}
             {showValue && (
-              <span className="text-[var(--text-sm)] font-medium tabular-nums">
+              <span className="text-[var(--text-sm)] font-bold tabular-nums text-[var(--accent-primary)]">
                 {formatValue(value)}
               </span>
             )}
@@ -61,38 +61,41 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
             value={value}
             onChange={(e) => onChange(parseFloat(e.target.value))}
             className={cn(
-              "w-full h-2 appearance-none cursor-pointer",
-              "bg-[var(--bg-elevated)] rounded-full",
-              "focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-base)]",
+              "w-full h-1.5 appearance-none cursor-pointer",
+              "bg-[var(--bg-void)] rounded-full",
+              "border border-[var(--border-subtle)]",
+              "focus:outline-none",
               // Webkit slider thumb
               "[&::-webkit-slider-thumb]:appearance-none",
               "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4",
               "[&::-webkit-slider-thumb]:rounded-full",
               "[&::-webkit-slider-thumb]:bg-[var(--accent-primary)]",
-              "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white",
-              "[&::-webkit-slider-thumb]:shadow-md",
+              "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--bg-void)]",
+              "[&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--accent-primary-glow)]",
               "[&::-webkit-slider-thumb]:cursor-pointer",
-              "[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-100",
+              "[&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-150",
               "[&::-webkit-slider-thumb]:hover:scale-110",
+              "[&::-webkit-slider-thumb]:hover:shadow-[0_0_12px_var(--accent-primary-glow)]",
               // Firefox slider thumb
               "[&::-moz-range-thumb]:appearance-none",
               "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4",
               "[&::-moz-range-thumb]:rounded-full",
               "[&::-moz-range-thumb]:bg-[var(--accent-primary)]",
-              "[&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white",
+              "[&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--bg-void)]",
               "[&::-moz-range-thumb]:cursor-pointer"
             )}
             style={{
-              background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, var(--bg-elevated) ${percentage}%, var(--bg-elevated) 100%)`,
+              background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, var(--bg-void) ${percentage}%, var(--bg-void) 100%)`,
             }}
             {...props}
           />
 
           {/* Marks */}
           {marks && (
-            <div className="relative h-4 mt-1">
+            <div className="relative h-5 mt-2">
               {marks.map((mark) => {
                 const markPercent = ((mark - min) / (max - min)) * 100;
+                const isActive = value >= mark;
                 return (
                   <button
                     key={mark}
@@ -100,11 +103,12 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
                     onClick={() => onChange(mark)}
                     className={cn(
                       "absolute -translate-x-1/2",
-                      "text-[var(--text-xs)] tabular-nums",
-                      "hover:text-[var(--text-primary)] transition-colors",
-                      value === mark
+                      "text-[var(--text-2xs)] tabular-nums font-semibold",
+                      "transition-all duration-150",
+                      "hover:scale-110",
+                      isActive
                         ? "text-[var(--accent-primary)]"
-                        : "text-[var(--text-muted)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                     )}
                     style={{ left: `${markPercent}%` }}
                   >
@@ -136,16 +140,41 @@ export function LeverageSlider({
 }: LeverageSliderProps) {
   const marks = [1, Math.floor(maxLeverage / 4), Math.floor(maxLeverage / 2), Math.floor(maxLeverage * 3 / 4), maxLeverage];
 
+  // Determine color based on leverage risk
+  const getRiskLevel = () => {
+    const ratio = value / maxLeverage;
+    if (ratio < 0.4) return "low";
+    if (ratio < 0.7) return "medium";
+    return "high";
+  };
+
+  const riskLevel = getRiskLevel();
+
   return (
-    <Slider
-      value={value}
-      onChange={onChange}
-      min={1}
-      max={maxLeverage}
-      step={0.1}
-      label="Leverage"
-      formatValue={(v) => `${v.toFixed(1)}x`}
-      marks={marks}
-    />
+    <div className="space-y-2">
+      <Slider
+        value={value}
+        onChange={onChange}
+        min={1}
+        max={maxLeverage}
+        step={0.1}
+        label="Leverage"
+        formatValue={(v) => `${v.toFixed(1)}x`}
+        marks={marks}
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-[var(--text-2xs)] text-[var(--text-muted)]">
+          Risk Level
+        </span>
+        <span className={cn(
+          "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+          riskLevel === "low" && "text-[var(--color-long)]",
+          riskLevel === "medium" && "text-[var(--color-warning)]",
+          riskLevel === "high" && "text-[var(--color-short)]"
+        )}>
+          {riskLevel}
+        </span>
+      </div>
+    </div>
   );
 }

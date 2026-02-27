@@ -14,18 +14,18 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: "bg-[var(--bg-hover)] text-[var(--text-secondary)]",
-  long: "bg-[var(--color-long-muted)] text-[var(--color-long)]",
-  short: "bg-[var(--color-short-muted)] text-[var(--color-short)]",
-  warning: "bg-[var(--color-warning-muted)] text-[var(--color-warning)]",
+  default: "bg-[var(--bg-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)]",
+  long: "bg-[var(--color-long-subtle)] text-[var(--color-long)] border border-[var(--color-long-glow)]",
+  short: "bg-[var(--color-short-subtle)] text-[var(--color-short)] border border-[var(--color-short-glow)]",
+  warning: "bg-[var(--color-warning-subtle)] text-[var(--color-warning)] border border-[var(--color-warning-glow)]",
   regime: "", // handled by regime prop
 };
 
 const regimeStyles: Record<RegimeType, string> = {
-  open: "bg-[rgba(34,197,94,0.15)] text-[var(--regime-open)]",
-  "off-hours": "bg-[rgba(245,158,11,0.15)] text-[var(--regime-off-hours)]",
-  transition: "bg-[rgba(59,130,246,0.15)] text-[var(--regime-transition)]",
-  stress: "bg-[rgba(239,68,68,0.15)] text-[var(--regime-stress)]",
+  open: "regime-open",
+  "off-hours": "regime-off-hours",
+  transition: "regime-transition",
+  stress: "regime-stress",
 };
 
 const regimeLabels: Record<RegimeType, string> = {
@@ -48,10 +48,10 @@ export function Badge({
     <span
       className={cn(
         "inline-flex items-center",
-        "px-2 py-0.5",
-        "text-[var(--text-xs)] font-medium",
+        "px-2.5 py-1",
+        "text-[var(--text-2xs)] font-semibold",
         "rounded-[var(--radius-sm)]",
-        "uppercase tracking-wide",
+        "uppercase tracking-widest",
         styles,
         className
       )}

@@ -1,13 +1,26 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
+import type { LivelinePoint, CandlePoint } from "liveline";
 
 // Dynamically import Liveline to avoid SSR issues with canvas
 const Liveline = dynamic(
   () => import("liveline").then((mod) => mod.Liveline),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-[var(--bg-void)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
+            Loading Chart
+          </span>
+        </div>
+      </div>
+    )
+  }
 );
 
 interface ChartPanelProps {
@@ -16,29 +29,17 @@ interface ChartPanelProps {
   className?: string;
 }
 
-interface DataPoint {
-  time: number;
-  value: number;
-}
-
-interface CandlePoint {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
 export function ChartPanel({
   symbol,
   currentPrice = 2341.5,
   className,
 }: ChartPanelProps) {
   const [mode, setMode] = useState<"line" | "candle">("line");
-  const [timeframe, setTimeframe] = useState(3600); // 1H in seconds
-  const [lineData, setLineData] = useState<DataPoint[]>([]);
+  const [windowSecs, setWindowSecs] = useState(3600); // 1H in seconds
+  const [lineData, setLineData] = useState<LivelinePoint[]>([]);
   const [candleData, setCandleData] = useState<CandlePoint[]>([]);
   const [currentValue, setCurrentValue] = useState(currentPrice);
+  const [isClient, setIsClient] = useState(false);
 
   const timeframes = [
     { label: "1M", secs: 60 },
@@ -49,14 +50,21 @@ export function ChartPanel({
     { label: "1D", secs: 86400 },
   ];
 
+  // Ensure client-side only rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Generate mock data on mount
   useEffect(() => {
+    if (!isClient) return;
+
     const now = Date.now();
-    const points: DataPoint[] = [];
+    const points: LivelinePoint[] = [];
     const candles: CandlePoint[] = [];
     let price = currentPrice;
 
-    // Generate historical data
+    // Generate historical data - 100 points
     for (let i = 100; i >= 0; i--) {
       const time = now - i * 60000; // 1 minute intervals
       const change = (Math.random() - 0.5) * 5;
@@ -64,7 +72,7 @@ export function ChartPanel({
 
       points.push({ time, value: price });
 
-      // Generate candle data
+      // Generate candle data every 5 minutes
       if (i % 5 === 0) {
         const open = price;
         const volatility = Math.random() * 10;
@@ -79,53 +87,63 @@ export function ChartPanel({
     setLineData(points);
     setCandleData(candles);
     setCurrentValue(price);
-  }, [currentPrice]);
+  }, [currentPrice, isClient]);
 
   // Simulate live updates
   useEffect(() => {
+    if (!isClient || lineData.length === 0) return;
+
     const interval = setInterval(() => {
       const now = Date.now();
       const change = (Math.random() - 0.5) * 2;
-      const newValue = currentValue + change;
 
-      setCurrentValue(newValue);
-      setLineData((prev) => [...prev.slice(-99), { time: now, value: newValue }]);
+      setCurrentValue((prev) => {
+        const newValue = prev + change;
 
-      // Update last candle
-      setCandleData((prev) => {
-        if (prev.length === 0) return prev;
-        const newCandles = [...prev];
-        const lastCandle = { ...newCandles[newCandles.length - 1] };
-        lastCandle.close = newValue;
-        lastCandle.high = Math.max(lastCandle.high, newValue);
-        lastCandle.low = Math.min(lastCandle.low, newValue);
-        newCandles[newCandles.length - 1] = lastCandle;
-        return newCandles;
+        // Update line data
+        setLineData((prevData) => {
+          const newData = [...prevData.slice(-99), { time: now, value: newValue }];
+          return newData;
+        });
+
+        // Update last candle
+        setCandleData((prevCandles) => {
+          if (prevCandles.length === 0) return prevCandles;
+          const newCandles = [...prevCandles];
+          const lastCandle = { ...newCandles[newCandles.length - 1] };
+          lastCandle.close = newValue;
+          lastCandle.high = Math.max(lastCandle.high, newValue);
+          lastCandle.low = Math.min(lastCandle.low, newValue);
+          newCandles[newCandles.length - 1] = lastCandle;
+          return newCandles;
+        });
+
+        return newValue;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentValue]);
+  }, [isClient, lineData.length]);
 
   const formatValue = (v: number) => `$${v.toFixed(2)}`;
 
   return (
-    <div className={cn("h-full flex flex-col bg-[var(--bg-base)]", className)}>
+    <div className={cn("h-full flex flex-col bg-[var(--bg-void)]", className)}>
       {/* Chart Controls */}
-      <div className="h-10 flex items-center justify-between px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <div className="h-11 flex items-center justify-between px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 backdrop-blur-sm">
         {/* Left: Timeframe Selector */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {timeframes.map((tf) => (
             <button
               key={tf.secs}
-              onClick={() => setTimeframe(tf.secs)}
+              onClick={() => setWindowSecs(tf.secs)}
               className={cn(
-                "px-2 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-xs)] font-medium",
-                "transition-colors duration-[var(--transition-fast)]",
-                timeframe === tf.secs
-                  ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                "px-2.5 py-1 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+                "transition-all duration-200",
+                windowSecs === tf.secs
+                  ? "bg-[var(--accent-primary-subtle)] text-[var(--accent-primary)] border border-[var(--accent-primary-glow)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent"
               )}
             >
               {tf.label}
@@ -136,16 +154,16 @@ export function ChartPanel({
         {/* Right: Chart Type & Tools */}
         <div className="flex items-center gap-2">
           {/* Mode Toggle */}
-          <div className="flex items-center gap-1 p-0.5 bg-[var(--bg-elevated)] rounded-[var(--radius-sm)]">
+          <div className="flex items-center gap-0.5 p-0.5 bg-[var(--bg-void)] rounded-[var(--radius-sm)] border border-[var(--border-subtle)]">
             <button
               onClick={() => setMode("line")}
               className={cn(
-                "px-2 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-xs)]",
-                "transition-colors duration-[var(--transition-fast)]",
+                "px-2.5 py-1 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+                "transition-all duration-200",
                 mode === "line"
-                  ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)]"
+                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
               Line
@@ -153,12 +171,12 @@ export function ChartPanel({
             <button
               onClick={() => setMode("candle")}
               className={cn(
-                "px-2 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-xs)]",
-                "transition-colors duration-[var(--transition-fast)]",
+                "px-2.5 py-1 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+                "transition-all duration-200",
                 mode === "candle"
-                  ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)]"
+                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
               Candles
@@ -168,10 +186,10 @@ export function ChartPanel({
           {/* Fullscreen */}
           <button
             className={cn(
-              "p-1 rounded-[var(--radius-sm)]",
+              "p-1.5 rounded-[var(--radius-sm)]",
               "text-[var(--text-muted)]",
-              "hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]",
-              "transition-colors duration-[var(--transition-fast)]"
+              "hover:text-[var(--accent-primary)] hover:bg-[var(--bg-hover)]",
+              "transition-all duration-200"
             )}
             aria-label="Expand chart"
           >
@@ -193,14 +211,14 @@ export function ChartPanel({
       </div>
 
       {/* Chart Container */}
-      <div className="flex-1 relative">
-        {lineData.length > 0 ? (
+      <div className="flex-1 relative min-h-0">
+        {isClient && lineData.length > 0 ? (
           <Liveline
             data={lineData}
             value={currentValue}
             theme="dark"
-            color="#3b82f6"
-            window={timeframe}
+            color="#00d4aa"
+            window={windowSecs}
             grid={true}
             badge={true}
             momentum={true}
@@ -210,24 +228,30 @@ export function ChartPanel({
             valueMomentumColor={true}
             formatValue={formatValue}
             mode={mode}
-            candles={candleData}
-            liveCandle={candleData[candleData.length - 1]}
+            candles={mode === "candle" ? candleData : undefined}
+            candleWidth={8}
+            liveCandle={mode === "candle" ? candleData[candleData.length - 1] : undefined}
             referenceLine={{
               value: currentPrice,
               label: "Entry",
             }}
             padding={{
-              top: 20,
-              right: 60,
-              bottom: 30,
-              left: 10,
+              top: 24,
+              right: 70,
+              bottom: 32,
+              left: 12,
             }}
             className="w-full h-full"
-            style={{ background: "var(--bg-base)" }}
+            style={{ background: "#05060a" }}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="skeleton w-full h-full" />
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-void)]">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+              <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
+                Loading Chart
+              </span>
+            </div>
           </div>
         )}
       </div>

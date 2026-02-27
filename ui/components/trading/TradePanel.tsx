@@ -55,8 +55,6 @@ export function TradePanel({
     if (isNaN(price) || isNaN(m) || m === 0) return "-";
 
     // Simplified liquidation price calculation
-    // liqPrice = entryPrice * (1 - 1/leverage * 0.9) for longs
-    // liqPrice = entryPrice * (1 + 1/leverage * 0.9) for shorts
     const margin_ratio = 0.9 / leverage;
     const liqPrice =
       side === "long"
@@ -85,29 +83,34 @@ export function TradePanel({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-[var(--bg-surface)]/60 backdrop-blur-sm">
       {/* Header */}
       <div className="p-4 border-b border-[var(--border-subtle)]">
-        <h2 className="text-[var(--text-lg)] font-semibold">
-          Trade {marketSymbol}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-[var(--text-base)] font-semibold tracking-tight">
+            Trade
+          </h2>
+          <span className="text-[var(--text-2xs)] text-[var(--accent-primary)] uppercase tracking-widest font-medium">
+            {marketSymbol}
+          </span>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Long/Short Toggle */}
         <LongShortTabs value={side} onChange={setSide} />
 
         {/* Order Type */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 p-1 bg-[var(--bg-void)] rounded-[var(--radius-md)]">
           <button
             onClick={() => setOrderType("market")}
             className={cn(
-              "flex-1 py-2 rounded-[var(--radius-md)]",
-              "text-[var(--text-sm)] font-medium",
-              "transition-colors duration-[var(--transition-fast)]",
+              "flex-1 py-2 rounded-[var(--radius-sm)]",
+              "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
+              "transition-all duration-200",
               orderType === "market"
-                ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
@@ -116,11 +119,11 @@ export function TradePanel({
           <button
             onClick={() => setOrderType("limit")}
             className={cn(
-              "flex-1 py-2 rounded-[var(--radius-md)]",
-              "text-[var(--text-sm)] font-medium",
-              "transition-colors duration-[var(--transition-fast)]",
+              "flex-1 py-2 rounded-[var(--radius-sm)]",
+              "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
+              "transition-all duration-200",
               orderType === "limit"
-                ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
@@ -151,7 +154,7 @@ export function TradePanel({
         />
 
         {/* Quick margin buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {[25, 50, 75, 100].map((pct) => (
             <button
               key={pct}
@@ -160,11 +163,13 @@ export function TradePanel({
                 setMargin((100 * pct / 100).toString());
               }}
               className={cn(
-                "flex-1 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-xs)] font-medium",
-                "bg-[var(--bg-hover)] text-[var(--text-muted)]",
-                "hover:text-[var(--text-secondary)]",
-                "transition-colors duration-[var(--transition-fast)]"
+                "flex-1 py-1.5 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold",
+                "bg-[var(--bg-void)] text-[var(--text-muted)]",
+                "border border-[var(--border-subtle)]",
+                "hover:border-[var(--border-default)] hover:text-[var(--text-secondary)]",
+                "transition-all duration-150",
+                "active:scale-95"
               )}
             >
               {pct}%
@@ -180,16 +185,30 @@ export function TradePanel({
         />
 
         {/* Order Summary */}
-        <Card padding="sm" className="space-y-2">
-          <SummaryRow label="Position Size" value={`$${positionSize}`} />
-          <SummaryRow label="Entry Price" value={`$${markPrice}`} />
+        <div className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-void)]/80 border border-[var(--border-subtle)] space-y-2.5">
           <SummaryRow
-            label="Liquidation Price"
+            label="Position Size"
+            value={`$${positionSize}`}
+            mono
+          />
+          <SummaryRow
+            label="Entry Price"
+            value={`$${markPrice}`}
+            mono
+          />
+          <div className="h-px bg-[var(--border-subtle)] my-2" />
+          <SummaryRow
+            label="Est. Liquidation"
             value={`$${estimatedLiqPrice()}`}
             highlight={side === "short" ? "long" : "short"}
+            mono
           />
-          <SummaryRow label="Trading Fee" value="0.05%" />
-        </Card>
+          <SummaryRow
+            label="Trading Fee"
+            value="0.05%"
+            muted
+          />
+        </div>
       </div>
 
       {/* Submit Button */}
@@ -202,11 +221,12 @@ export function TradePanel({
             loading={isSubmitting}
             disabled={!margin || parseFloat(margin) <= 0}
             onClick={handleSubmit}
+            className="uppercase tracking-wider"
           >
             {side === "long" ? "Long" : "Short"} {marketSymbol}
           </Button>
         ) : (
-          <Button variant="primary" fullWidth size="lg" disabled>
+          <Button variant="primary" fullWidth size="lg" className="uppercase tracking-wider">
             Connect Wallet
           </Button>
         )}
@@ -219,19 +239,24 @@ interface SummaryRowProps {
   label: string;
   value: string;
   highlight?: "long" | "short";
+  mono?: boolean;
+  muted?: boolean;
 }
 
-function SummaryRow({ label, value, highlight }: SummaryRowProps) {
+function SummaryRow({ label, value, highlight, mono, muted }: SummaryRowProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
+      <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-wide">
         {label}
       </span>
       <span
         className={cn(
-          "text-[var(--text-sm)] tabular-nums font-medium",
+          "text-[var(--text-sm)] font-medium",
+          mono && "tabular-nums font-mono",
           highlight === "long" && "text-[var(--color-long)]",
-          highlight === "short" && "text-[var(--color-short)]"
+          highlight === "short" && "text-[var(--color-short)]",
+          muted && "text-[var(--text-muted)]",
+          !highlight && !muted && "text-[var(--text-primary)]"
         )}
       >
         {value}

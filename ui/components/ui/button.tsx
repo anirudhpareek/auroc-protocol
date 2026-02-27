@@ -16,14 +16,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
-    bg-[var(--accent-primary)] text-white
-    hover:bg-[var(--accent-primary-hover)]
-    active:bg-[var(--accent-primary-hover)]
+    bg-[var(--accent-primary)] text-[var(--bg-void)]
+    font-semibold
+    hover:shadow-[var(--glow-accent)]
+    active:scale-[0.98]
   `,
   secondary: `
     bg-[var(--bg-elevated)] text-[var(--text-primary)]
     border border-[var(--border-default)]
-    hover:bg-[var(--bg-hover)] hover:border-[var(--border-strong)]
+    hover:bg-[var(--bg-hover)] hover:border-[var(--accent-primary)]
     active:bg-[var(--bg-active)]
   `,
   ghost: `
@@ -32,26 +33,29 @@ const variantStyles: Record<ButtonVariant, string> = {
     active:bg-[var(--bg-active)]
   `,
   long: `
-    bg-[var(--color-long)] text-white
-    hover:brightness-110
-    active:brightness-95
+    bg-[var(--color-long)] text-[var(--bg-void)]
+    font-semibold
+    hover:shadow-[var(--glow-long)]
+    active:scale-[0.98]
   `,
   short: `
     bg-[var(--color-short)] text-white
-    hover:brightness-110
-    active:brightness-95
+    font-semibold
+    hover:shadow-[var(--glow-short)]
+    active:scale-[0.98]
   `,
   danger: `
     bg-[var(--color-short)] text-white
-    hover:brightness-110
-    active:brightness-95
+    font-semibold
+    hover:shadow-[var(--glow-short)]
+    active:scale-[0.98]
   `,
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
   sm: "h-8 px-3 text-[var(--text-sm)] gap-1.5",
-  md: "h-10 px-4 text-[var(--text-base)] gap-2",
-  lg: "h-12 px-6 text-[var(--text-lg)] gap-2",
+  md: "h-10 px-5 text-[var(--text-sm)] gap-2",
+  lg: "h-12 px-6 text-[var(--text-base)] gap-2",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

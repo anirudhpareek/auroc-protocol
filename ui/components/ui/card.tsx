@@ -8,6 +8,7 @@ interface CardProps {
   className?: string;
   padding?: "none" | "sm" | "md" | "lg";
   elevated?: boolean;
+  glow?: boolean;
 }
 
 const paddingStyles = {
@@ -22,15 +23,18 @@ export function Card({
   className,
   padding = "md",
   elevated = false,
+  glow = false,
 }: CardProps) {
   return (
     <div
       className={cn(
         "rounded-[var(--radius-lg)]",
         "border",
+        "backdrop-blur-sm",
         elevated
-          ? "bg-[var(--bg-elevated)] border-[var(--border-default)]"
-          : "bg-[var(--bg-surface)] border-[var(--border-subtle)]",
+          ? "bg-[var(--bg-elevated)]/90 border-[var(--border-default)]"
+          : "bg-[var(--bg-surface)]/80 border-[var(--border-subtle)]",
+        glow && "panel-glow",
         paddingStyles[padding],
         className
       )}
@@ -82,6 +86,7 @@ interface StatCardProps {
   prefix?: string;
   suffix?: string;
   className?: string;
+  glow?: boolean;
 }
 
 export function StatCard({
@@ -91,19 +96,23 @@ export function StatCard({
   prefix,
   suffix,
   className,
+  glow = false,
 }: StatCardProps) {
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
-      <span className="text-[var(--text-xs)] text-[var(--text-muted)] uppercase tracking-wide">
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest font-medium">
         {label}
       </span>
-      <div className="flex items-baseline gap-1">
+      <div className="flex items-baseline gap-1.5">
         {prefix && (
           <span className="text-[var(--text-muted)] text-[var(--text-sm)]">
             {prefix}
           </span>
         )}
-        <span className="text-[var(--text-xl)] font-semibold tabular-nums">
+        <span className={cn(
+          "text-[var(--text-2xl)] font-semibold tabular-nums tracking-tight",
+          glow && "glow-text text-[var(--accent-primary)]"
+        )}>
           {value}
         </span>
         {suffix && (
@@ -115,7 +124,7 @@ export function StatCard({
       {change !== undefined && (
         <span
           className={cn(
-            "text-[var(--text-xs)] tabular-nums",
+            "text-[var(--text-xs)] tabular-nums font-medium",
             change >= 0 ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
           )}
         >

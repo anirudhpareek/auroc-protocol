@@ -88,17 +88,22 @@ export function PositionsPanel({
 
   if (!isConnected) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <p className="text-[var(--text-muted)]">
-          Connect wallet to view positions
-        </p>
+      <div className="h-full flex items-center justify-center bg-[var(--bg-surface)]/60 backdrop-blur-sm">
+        <div className="text-center space-y-2">
+          <p className="text-[var(--text-muted)] text-[var(--text-sm)]">
+            Connect wallet to view positions
+          </p>
+          <p className="text-[var(--text-2xs)] text-[var(--text-disabled)]">
+            Your positions and orders will appear here
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <Tabs defaultValue="positions" className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 pt-3">
+    <Tabs defaultValue="positions" className="h-full flex flex-col bg-[var(--bg-surface)]/60 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[var(--border-subtle)]">
         <TabsList>
           <TabsTrigger value="positions">
             Positions ({positions.length})
