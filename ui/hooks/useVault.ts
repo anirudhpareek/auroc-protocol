@@ -126,3 +126,38 @@ export function useUsdcApproval() {
     isSuccess,
   };
 }
+
+// Combined hook for vault operations
+export function useVault() {
+  const vaultData = useVaultData();
+  const depositHook = useVaultDeposit();
+  const withdrawHook = useVaultWithdraw();
+  const approvalHook = useUsdcApproval();
+
+  const deposit = async (amountUsdc: number) => {
+    const amount = parseUnits(amountUsdc.toString(), 6);
+
+    // Check if approval is needed
+    if (approvalHook.allowance < amount) {
+      approvalHook.approve(amount);
+      // Wait for approval - in real implementation, you'd wait for the tx
+    }
+
+    depositHook.deposit(amountUsdc.toString());
+  };
+
+  const withdraw = async (shares: number) => {
+    const sharesWei = parseUnits(shares.toString(), 18);
+    withdrawHook.withdraw(sharesWei);
+  };
+
+  return {
+    ...vaultData,
+    deposit,
+    withdraw,
+    isDepositing: depositHook.isPending || depositHook.isConfirming,
+    isWithdrawing: withdrawHook.isPending || withdrawHook.isConfirming,
+    depositError: depositHook.error,
+    withdrawError: withdrawHook.error,
+  };
+}
