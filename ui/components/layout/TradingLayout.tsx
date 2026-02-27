@@ -18,7 +18,7 @@ export function TradingLayout({
   rightPanel,
 }: TradingLayoutProps) {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-base)]">
       <Header />
 
       <div className="flex-1 flex overflow-hidden">
@@ -26,7 +26,7 @@ export function TradingLayout({
         <aside
           className={cn(
             "hidden lg:flex flex-col",
-            "w-64 flex-shrink-0",
+            "w-[240px] flex-shrink-0",
             "border-r border-[var(--border-subtle)]",
             "bg-[var(--bg-surface)]"
           )}
@@ -42,7 +42,7 @@ export function TradingLayout({
           {/* Bottom Panel - Positions/Orders */}
           <div
             className={cn(
-              "h-64 flex-shrink-0",
+              "h-[280px] flex-shrink-0",
               "border-t border-[var(--border-subtle)]",
               "bg-[var(--bg-surface)]",
               "overflow-hidden"
@@ -56,7 +56,7 @@ export function TradingLayout({
         <aside
           className={cn(
             "hidden md:flex flex-col",
-            "w-80 flex-shrink-0",
+            "w-[320px] flex-shrink-0",
             "border-l border-[var(--border-subtle)]",
             "bg-[var(--bg-surface)]"
           )}
@@ -81,7 +81,7 @@ export function MobileLayout({
   onTabChange,
 }: MobileLayoutProps) {
   return (
-    <div className="h-screen flex flex-col md:hidden">
+    <div className="h-screen flex flex-col md:hidden bg-[var(--bg-base)]">
       <Header />
 
       <main className="flex-1 overflow-auto">{children}</main>
@@ -108,7 +108,7 @@ export function MobileLayout({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
               />
             </svg>
@@ -128,7 +128,7 @@ export function MobileLayout({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
@@ -148,7 +148,7 @@ export function MobileLayout({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
               />
             </svg>
@@ -180,7 +180,7 @@ function NavButton({ active, onClick, icon, label }: NavButtonProps) {
       )}
     >
       {icon}
-      <span className="text-[var(--text-xs)] font-medium">{label}</span>
+      <span className="text-[var(--text-2xs)] font-medium">{label}</span>
     </button>
   );
 }

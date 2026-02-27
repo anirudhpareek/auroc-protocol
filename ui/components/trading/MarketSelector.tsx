@@ -36,10 +36,10 @@ export function MarketSelector({
   );
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-surface)]/60 backdrop-blur-sm">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-[var(--border-subtle)]">
-        <h2 className="text-[var(--text-2xs)] font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-3">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
+        <h2 className="text-[var(--text-2xs)] font-medium text-[var(--text-muted)] uppercase tracking-widest mb-2">
           Markets
         </h2>
         <div className="relative">
@@ -49,19 +49,18 @@ export function MarketSelector({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
-              "w-full h-9 pl-9 pr-3",
+              "w-full h-8 pl-8 pr-3",
               "bg-[var(--bg-void)]",
               "border border-[var(--border-subtle)]",
               "rounded-[var(--radius-md)]",
-              "text-[var(--text-sm)]",
+              "text-[var(--text-xs)]",
               "placeholder:text-[var(--text-muted)]",
               "focus:outline-none focus:border-[var(--accent-primary)]",
-              "focus:shadow-[0_0_0_3px_var(--accent-primary-subtle)]",
-              "transition-all duration-200"
+              "transition-colors duration-[var(--transition-fast)]"
             )}
           />
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -79,20 +78,20 @@ export function MarketSelector({
       {/* Market List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="p-3 space-y-2">
+          <div className="p-2 space-y-1">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="h-16 rounded-[var(--radius-md)] skeleton"
+                className="h-14 rounded-[var(--radius-sm)] skeleton"
               />
             ))}
           </div>
         ) : filteredMarkets.length === 0 ? (
-          <div className="p-4 text-center text-[var(--text-muted)] text-[var(--text-sm)]">
+          <div className="p-4 text-center text-[var(--text-muted)] text-[var(--text-xs)]">
             No markets found
           </div>
         ) : (
-          <div className="p-2 space-y-1">
+          <div className="p-1.5 space-y-0.5">
             {filteredMarkets.map((market) => (
               <MarketItem
                 key={market.id}
@@ -121,16 +120,16 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-3",
-        "rounded-[var(--radius-md)]",
+        "w-full px-3 py-2.5",
+        "rounded-[var(--radius-sm)]",
         "text-left",
-        "transition-all duration-200",
+        "transition-colors duration-[var(--transition-fast)]",
         isSelected
-          ? "bg-[var(--accent-primary-subtle)] border border-[var(--accent-primary)] shadow-[0_0_12px_-4px_var(--accent-primary-glow)]"
-          : "bg-transparent hover:bg-[var(--bg-hover)] border border-transparent"
+          ? "bg-[var(--accent-primary-subtle)] border-l-2 border-l-[var(--accent-primary)]"
+          : "bg-transparent hover:bg-[var(--bg-hover)] border-l-2 border-l-transparent"
       )}
     >
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <span className={cn(
             "text-[var(--text-sm)] font-semibold tracking-tight",
@@ -144,14 +143,14 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
 
       <div className="flex items-center justify-between">
         <span className={cn(
-          "price-display text-[var(--text-lg)] font-semibold",
+          "price-display text-[var(--text-base)]",
           isPositive ? "price-up" : "price-down"
         )}>
           ${market.price}
         </span>
         <span
           className={cn(
-            "text-[var(--text-xs)] tabular-nums font-semibold",
+            "text-[var(--text-2xs)] tabular-nums font-semibold",
             isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
           )}
         >
@@ -160,12 +159,12 @@ function MarketItem({ market, isSelected, onClick }: MarketItemProps) {
         </span>
       </div>
 
-      <div className="flex items-center justify-between mt-1.5">
+      <div className="flex items-center justify-between mt-1">
         <span className="text-[var(--text-2xs)] text-[var(--text-muted)]">
           {market.name}
         </span>
         <span className="text-[var(--text-2xs)] text-[var(--text-muted)] tabular-nums">
-          Vol: ${market.volume24h}
+          Vol ${market.volume24h}
         </span>
       </div>
     </button>
@@ -190,8 +189,8 @@ export function MarketInfo({
 }: MarketInfoProps) {
   if (!market) {
     return (
-      <div className="h-16 flex items-center px-4 border-b border-[var(--border-subtle)]">
-        <div className="skeleton h-6 w-32" />
+      <div className="h-14 flex items-center px-4 border-b border-[var(--border-subtle)]">
+        <div className="skeleton h-5 w-32" />
       </div>
     );
   }
@@ -199,11 +198,11 @@ export function MarketInfo({
   const isPositive = market.change24h >= 0;
 
   return (
-    <div className="h-16 flex items-center gap-6 px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 backdrop-blur-sm overflow-x-auto">
+    <div className="h-14 flex items-center gap-5 px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-x-auto">
       {/* Symbol & Price */}
-      <div className="flex items-center gap-4 flex-shrink-0">
+      <div className="flex items-center gap-3 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text-lg)] font-bold tracking-tight">
+          <span className="text-[var(--text-base)] font-bold tracking-tight">
             {market.symbol}
           </span>
           <RegimeBadge regime={market.regime} />
@@ -211,14 +210,14 @@ export function MarketInfo({
 
         <div className="flex items-baseline gap-2">
           <span className={cn(
-            "price-display text-[var(--text-2xl)] font-bold tracking-tight",
+            "price-display text-[var(--text-xl)] font-bold tracking-tight",
             isPositive ? "price-up" : "price-down"
           )}>
             ${market.price}
           </span>
           <span
             className={cn(
-              "text-[var(--text-sm)] tabular-nums font-semibold",
+              "text-[var(--text-xs)] tabular-nums font-semibold",
               isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
             )}
           >
@@ -229,10 +228,10 @@ export function MarketInfo({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-[var(--border-default)]" />
+      <div className="h-7 w-px bg-[var(--border-default)] flex-shrink-0" />
 
       {/* Stats */}
-      <div className="flex items-center gap-6 flex-shrink-0">
+      <div className="flex items-center gap-5 flex-shrink-0">
         <InfoStat label="Mark" value={markPrice || market.price} prefix="$" />
         <InfoStat label="Index" value={indexPrice || market.price} prefix="$" />
         <InfoStat

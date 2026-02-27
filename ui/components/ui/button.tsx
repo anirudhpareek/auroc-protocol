@@ -18,13 +18,13 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary: `
     bg-[var(--accent-primary)] text-[var(--bg-void)]
     font-semibold
-    hover:shadow-[var(--glow-accent)]
+    hover:brightness-110
     active:scale-[0.98]
   `,
   secondary: `
     bg-[var(--bg-elevated)] text-[var(--text-primary)]
     border border-[var(--border-default)]
-    hover:bg-[var(--bg-hover)] hover:border-[var(--accent-primary)]
+    hover:bg-[var(--bg-hover)] hover:border-[var(--border-strong)]
     active:bg-[var(--bg-active)]
   `,
   ghost: `
@@ -35,27 +35,27 @@ const variantStyles: Record<ButtonVariant, string> = {
   long: `
     bg-[var(--color-long)] text-[var(--bg-void)]
     font-semibold
-    hover:shadow-[var(--glow-long)]
+    hover:brightness-110
     active:scale-[0.98]
   `,
   short: `
     bg-[var(--color-short)] text-white
     font-semibold
-    hover:shadow-[var(--glow-short)]
+    hover:brightness-110
     active:scale-[0.98]
   `,
   danger: `
     bg-[var(--color-short)] text-white
     font-semibold
-    hover:shadow-[var(--glow-short)]
+    hover:brightness-110
     active:scale-[0.98]
   `,
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-[var(--text-sm)] gap-1.5",
-  md: "h-10 px-5 text-[var(--text-sm)] gap-2",
-  lg: "h-12 px-6 text-[var(--text-base)] gap-2",
+  sm: "h-7 px-2.5 text-[var(--text-xs)] gap-1.5",
+  md: "h-9 px-4 text-[var(--text-sm)] gap-2",
+  lg: "h-11 px-5 text-[var(--text-base)] gap-2",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -77,17 +77,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          // Base styles
           "inline-flex items-center justify-center",
           "font-medium rounded-[var(--radius-md)]",
           "transition-all duration-[var(--transition-fast)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          // Variant
+          "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
           variantStyles[variant],
-          // Size
           sizeStyles[size],
-          // Full width
           fullWidth && "w-full",
           className
         )}

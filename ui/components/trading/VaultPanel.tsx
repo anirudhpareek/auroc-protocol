@@ -69,8 +69,8 @@ export function VaultPanel({
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-[var(--border-subtle)]">
-        <h2 className="text-[var(--text-lg)] font-semibold">Liquidity Vault</h2>
-        <p className="text-[var(--text-sm)] text-[var(--text-muted)] mt-1">
+        <h2 className="text-[var(--text-base)] font-semibold">Liquidity Vault</h2>
+        <p className="text-[var(--text-xs)] text-[var(--text-muted)] mt-0.5">
           Provide liquidity and earn trading fees
         </p>
       </div>
@@ -79,7 +79,7 @@ export function VaultPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Vault Stats */}
         <Card padding="sm">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <StatCard label="Total Deposits" value={totalDeposits} prefix="$" />
             <StatCard label="Share Price" value={sharePrice} prefix="$" />
             <StatCard label="APR" value={apr} suffix="%" />
@@ -89,11 +89,11 @@ export function VaultPanel({
 
         {/* User Position */}
         {isConnected && (
-          <Card padding="sm" className="bg-[var(--bg-elevated)]">
-            <div className="text-[var(--text-xs)] text-[var(--text-muted)] uppercase tracking-wider mb-2">
+          <Card padding="sm" elevated>
+            <div className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-wider mb-2">
               Your Position
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <StatCard label="LP Shares" value={userShares} />
               <StatCard label="Value" value={userValue} prefix="$" />
             </div>
@@ -108,7 +108,7 @@ export function VaultPanel({
           </TabsList>
 
           <TabsContent value="deposit">
-            <div className="space-y-4">
+            <div className="space-y-3 pt-3">
               <NumericInput
                 label="Deposit Amount"
                 value={depositAmount}
@@ -118,15 +118,14 @@ export function VaultPanel({
                 decimals={6}
               />
 
-              {/* Quick amount buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {[25, 50, 75, 100].map((pct) => (
                   <button
                     key={pct}
                     onClick={() => setDepositAmount((1000 * pct / 100).toString())}
                     className={cn(
                       "flex-1 py-1 rounded-[var(--radius-sm)]",
-                      "text-[var(--text-xs)] font-medium",
+                      "text-[var(--text-2xs)] font-medium",
                       "bg-[var(--bg-hover)] text-[var(--text-muted)]",
                       "hover:text-[var(--text-secondary)]",
                       "transition-colors duration-[var(--transition-fast)]"
@@ -137,9 +136,8 @@ export function VaultPanel({
                 ))}
               </div>
 
-              {/* Expected Output */}
               {depositAmount && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                <div className="p-2.5 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
                   <div className="flex items-center justify-between text-[var(--text-sm)]">
                     <span className="text-[var(--text-muted)]">
                       Expected Shares
@@ -171,7 +169,7 @@ export function VaultPanel({
           </TabsContent>
 
           <TabsContent value="withdraw">
-            <div className="space-y-4">
+            <div className="space-y-3 pt-3">
               <NumericInput
                 label="Withdraw Shares"
                 value={withdrawShares}
@@ -181,15 +179,14 @@ export function VaultPanel({
                 decimals={6}
               />
 
-              {/* Quick amount buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {[25, 50, 75, 100].map((pct) => (
                   <button
                     key={pct}
                     onClick={() => setWithdrawShares((parseFloat(userShares) * pct / 100).toString())}
                     className={cn(
                       "flex-1 py-1 rounded-[var(--radius-sm)]",
-                      "text-[var(--text-xs)] font-medium",
+                      "text-[var(--text-2xs)] font-medium",
                       "bg-[var(--bg-hover)] text-[var(--text-muted)]",
                       "hover:text-[var(--text-secondary)]",
                       "transition-colors duration-[var(--transition-fast)]"
@@ -200,9 +197,8 @@ export function VaultPanel({
                 ))}
               </div>
 
-              {/* Expected Output */}
               {withdrawShares && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                <div className="p-2.5 rounded-[var(--radius-md)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
                   <div className="flex items-center justify-between text-[var(--text-sm)]">
                     <span className="text-[var(--text-muted)]">
                       Expected USDC
@@ -234,8 +230,7 @@ export function VaultPanel({
           </TabsContent>
         </Tabs>
 
-        {/* Info Section */}
-        <div className="text-[var(--text-xs)] text-[var(--text-muted)] space-y-1">
+        <div className="text-[var(--text-2xs)] text-[var(--text-muted)] space-y-1">
           <p>
             By depositing, you provide liquidity to traders and earn a share of
             trading fees.
@@ -250,7 +245,6 @@ export function VaultPanel({
   );
 }
 
-// Full vault page with more details
 interface VaultPageProps {
   vaultData?: {
     totalDeposits: string;
@@ -287,16 +281,16 @@ export function VaultPage({
   onWithdraw,
 }: VaultPageProps) {
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto px-6 space-y-5">
       <div>
-        <h1 className="text-[var(--text-2xl)] font-bold">Liquidity Vault</h1>
-        <p className="text-[var(--text-secondary)] mt-1">
+        <h1 className="text-[var(--text-xl)] font-bold">Liquidity Vault</h1>
+        <p className="text-[var(--text-secondary)] text-[var(--text-sm)] mt-0.5">
           Provide liquidity to the perpetual trading pool and earn fees
         </p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card padding="md">
           <StatCard
             label="Total Value Locked"
@@ -321,10 +315,10 @@ export function VaultPage({
 
       {/* 24h Stats */}
       <Card padding="md">
-        <h3 className="text-[var(--text-base)] font-semibold mb-4">
+        <h3 className="text-[var(--text-sm)] font-semibold mb-3">
           24 Hour Performance
         </h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <StatCard
             label="Trading Volume"
             value={vaultData.tradingVolume24h}
@@ -345,7 +339,7 @@ export function VaultPage({
       </Card>
 
       {/* User Actions */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-5">
         <Card padding="md">
           <VaultPanel
             totalDeposits={vaultData.totalDeposits}

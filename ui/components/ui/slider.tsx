@@ -65,20 +65,16 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
               "bg-[var(--bg-void)] rounded-full",
               "border border-[var(--border-subtle)]",
               "focus:outline-none",
-              // Webkit slider thumb
               "[&::-webkit-slider-thumb]:appearance-none",
-              "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4",
+              "[&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5",
               "[&::-webkit-slider-thumb]:rounded-full",
               "[&::-webkit-slider-thumb]:bg-[var(--accent-primary)]",
               "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--bg-void)]",
-              "[&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--accent-primary-glow)]",
               "[&::-webkit-slider-thumb]:cursor-pointer",
-              "[&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-150",
+              "[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-150",
               "[&::-webkit-slider-thumb]:hover:scale-110",
-              "[&::-webkit-slider-thumb]:hover:shadow-[0_0_12px_var(--accent-primary-glow)]",
-              // Firefox slider thumb
               "[&::-moz-range-thumb]:appearance-none",
-              "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4",
+              "[&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5",
               "[&::-moz-range-thumb]:rounded-full",
               "[&::-moz-range-thumb]:bg-[var(--accent-primary)]",
               "[&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--bg-void)]",
@@ -90,9 +86,8 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
             {...props}
           />
 
-          {/* Marks */}
           {marks && (
-            <div className="relative h-5 mt-2">
+            <div className="relative h-5 mt-1.5">
               {marks.map((mark) => {
                 const markPercent = ((mark - min) / (max - min)) * 100;
                 const isActive = value >= mark;
@@ -104,8 +99,7 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
                     className={cn(
                       "absolute -translate-x-1/2",
                       "text-[var(--text-2xs)] tabular-nums font-semibold",
-                      "transition-all duration-150",
-                      "hover:scale-110",
+                      "transition-colors duration-150",
                       isActive
                         ? "text-[var(--accent-primary)]"
                         : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -126,7 +120,6 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
 
 Slider.displayName = "Slider";
 
-// Leverage slider specifically for trading
 interface LeverageSliderProps {
   value: number;
   onChange: (value: number) => void;
@@ -140,7 +133,6 @@ export function LeverageSlider({
 }: LeverageSliderProps) {
   const marks = [1, Math.floor(maxLeverage / 4), Math.floor(maxLeverage / 2), Math.floor(maxLeverage * 3 / 4), maxLeverage];
 
-  // Determine color based on leverage risk
   const getRiskLevel = () => {
     const ratio = value / maxLeverage;
     if (ratio < 0.4) return "low";

@@ -17,7 +17,7 @@ export function Table({ children, className }: TableProps) {
 }
 
 export function TableHeader({ children, className }: TableProps) {
-  return <thead className={cn(className)}>{children}</thead>;
+  return <thead className={cn("bg-[var(--bg-void)]/50", className)}>{children}</thead>;
 }
 
 export function TableBody({ children, className }: TableProps) {
@@ -54,8 +54,8 @@ export function TableHead({
   return (
     <th
       className={cn(
-        "px-4 py-3",
-        "text-[var(--text-xs)] font-medium text-[var(--text-muted)]",
+        "px-3 py-2",
+        "text-[var(--text-2xs)] font-medium text-[var(--text-muted)]",
         "uppercase tracking-wider",
         "border-b border-[var(--border-subtle)]",
         {
@@ -88,7 +88,7 @@ export function TableCell({
   return (
     <td
       className={cn(
-        "px-4 py-3",
+        "px-3 py-2",
         "text-[var(--text-sm)]",
         mono && "font-mono tabular-nums",
         {
@@ -105,7 +105,6 @@ export function TableCell({
   );
 }
 
-// Empty state for tables
 interface TableEmptyProps {
   message?: string;
   colSpan: number;
@@ -119,7 +118,7 @@ export function TableEmpty({
     <tr>
       <td
         colSpan={colSpan}
-        className="px-4 py-12 text-center text-[var(--text-muted)]"
+        className="px-3 py-10 text-center text-[var(--text-sm)] text-[var(--text-muted)]"
       >
         {message}
       </td>

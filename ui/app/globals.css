@@ -8,62 +8,59 @@
 @import "@fontsource/jetbrains-mono/600.css";
 
 /* ============================================
-   AUROC PROTOCOL - Cyberpunk Fintech Terminal
-   Bold, distinctive, unforgettable.
+   AUROC PROTOCOL — Trading Terminal
+   Clean, precise, professional.
    ============================================ */
 
 :root {
-  /* === Color Palette - Deep void with electric accents === */
+  /* === Backgrounds — Layered depth (5 levels) === */
+  --bg-void: #060810;
+  --bg-base: #0b0d14;
+  --bg-surface: #10131a;
+  --bg-elevated: #161921;
+  --bg-hover: #1c1f29;
+  --bg-active: #232733;
 
-  /* Backgrounds - Layered depth */
-  --bg-void: #05060a;
-  --bg-base: #0a0c12;
-  --bg-surface: #0f1218;
-  --bg-elevated: #141820;
-  --bg-hover: #1a1f2a;
-  --bg-active: #212736;
-
-  /* Text - Crisp hierarchy */
-  --text-primary: #f0f2f5;
-  --text-secondary: #8b95a5;
+  /* === Text — Clear hierarchy === */
+  --text-primary: #e8eaf0;
+  --text-secondary: #8891a4;
   --text-muted: #505a6a;
-  --text-disabled: #3a424f;
+  --text-disabled: #363d4a;
 
-  /* Borders - Subtle structure */
-  --border-subtle: rgba(255, 255, 255, 0.04);
+  /* === Borders — Subtle structure === */
+  --border-subtle: rgba(255, 255, 255, 0.05);
   --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-glow: rgba(0, 212, 170, 0.3);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  /* Accent - Electric Teal (primary brand) */
+  /* === Accent — Teal === */
   --accent-primary: #00d4aa;
   --accent-primary-dim: #00a888;
-  --accent-primary-glow: rgba(0, 212, 170, 0.25);
+  --accent-primary-glow: rgba(0, 212, 170, 0.15);
   --accent-primary-subtle: rgba(0, 212, 170, 0.08);
 
-  /* Trading Colors - Vivid signals */
-  --color-long: #00ff88;
-  --color-long-dim: #00cc6a;
-  --color-long-glow: rgba(0, 255, 136, 0.3);
-  --color-long-subtle: rgba(0, 255, 136, 0.1);
+  /* === Trading Colors === */
+  --color-long: #22c55e;
+  --color-long-dim: #16a34a;
+  --color-long-glow: rgba(34, 197, 94, 0.2);
+  --color-long-subtle: rgba(34, 197, 94, 0.08);
 
-  --color-short: #ff3366;
-  --color-short-dim: #cc2952;
-  --color-short-glow: rgba(255, 51, 102, 0.3);
-  --color-short-subtle: rgba(255, 51, 102, 0.1);
+  --color-short: #ef4444;
+  --color-short-dim: #dc2626;
+  --color-short-glow: rgba(239, 68, 68, 0.2);
+  --color-short-subtle: rgba(239, 68, 68, 0.08);
 
-  /* Warning/Caution */
-  --color-warning: #ffaa00;
-  --color-warning-glow: rgba(255, 170, 0, 0.3);
-  --color-warning-subtle: rgba(255, 170, 0, 0.1);
+  /* === Warning === */
+  --color-warning: #f59e0b;
+  --color-warning-glow: rgba(245, 158, 11, 0.2);
+  --color-warning-subtle: rgba(245, 158, 11, 0.08);
 
-  /* Regime Colors - Status indicators */
-  --regime-open: #00ff88;
-  --regime-off-hours: #ffaa00;
+  /* === Regime Colors === */
+  --regime-open: #22c55e;
+  --regime-off-hours: #f59e0b;
   --regime-transition: #00d4aa;
-  --regime-stress: #ff3366;
+  --regime-stress: #ef4444;
 
-  /* === Typography - Distinctive choices === */
+  /* === Typography === */
   --font-display: "Outfit", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", monospace;
 
@@ -71,14 +68,14 @@
   --text-2xs: 0.625rem;   /* 10px */
   --text-xs: 0.6875rem;   /* 11px */
   --text-sm: 0.8125rem;   /* 13px */
-  --text-base: 0.9375rem; /* 15px */
-  --text-lg: 1.0625rem;   /* 17px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
   --text-xl: 1.25rem;     /* 20px */
-  --text-2xl: 1.625rem;   /* 26px */
-  --text-3xl: 2.25rem;    /* 36px */
-  --text-4xl: 3rem;       /* 48px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 2rem;       /* 32px */
+  --text-4xl: 2.5rem;     /* 40px */
 
-  /* === Spacing - 4px grid === */
+  /* === Spacing — 4px grid === */
   --space-0: 0;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -90,28 +87,25 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* === Effects === */
+  /* === Radii === */
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 9999px;
 
-  /* Shadows & Glows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --glow-accent: 0 0 20px var(--accent-primary-glow), 0 0 40px var(--accent-primary-glow);
-  --glow-long: 0 0 20px var(--color-long-glow), 0 0 40px var(--color-long-glow);
-  --glow-short: 0 0 20px var(--color-short-glow), 0 0 40px var(--color-short-glow);
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
 
-  /* Transitions */
+  /* === Transitions === */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: 120ms var(--ease-out-expo);
-  --transition-base: 200ms var(--ease-out-expo);
-  --transition-slow: 400ms var(--ease-out-expo);
+  --transition-base: 180ms var(--ease-out-expo);
+  --transition-slow: 300ms var(--ease-out-expo);
 
-  /* Z-Index */
+  /* === Z-Index === */
   --z-dropdown: 50;
   --z-sticky: 100;
   --z-modal: 200;
@@ -170,26 +164,10 @@ body {
   overflow-x: hidden;
 }
 
-/* Scanline overlay effect */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
 /* === Scrollbar === */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -222,7 +200,7 @@ body::before {
   color: var(--text-primary);
 }
 
-/* === Price Display - The hero element === */
+/* === Price Display === */
 .price-display {
   font-family: var(--font-mono);
   font-weight: 600;
@@ -232,12 +210,10 @@ body::before {
 
 .price-up {
   color: var(--color-long);
-  text-shadow: 0 0 8px var(--color-long-glow);
 }
 
 .price-down {
   color: var(--color-short);
-  text-shadow: 0 0 8px var(--color-short-glow);
 }
 
 /* Tabular numbers for alignment */
@@ -272,31 +248,18 @@ body::before {
   box-shadow: inset 0 0 0 1px var(--color-short-glow);
 }
 
-/* === Panel/Card Styles === */
+/* === Panel === */
 .panel {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(8px);
-}
-
-.panel-glow {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-glow);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 0 30px -10px var(--accent-primary-glow);
 }
 
 /* === Animations === */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -324,8 +287,9 @@ body::before {
   100% { background-color: transparent; }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .animate-slide-up {
@@ -337,11 +301,15 @@ body::before {
 }
 
 .animate-price-up {
-  animation: price-flash-up 500ms ease-out;
+  animation: price-flash-up 400ms ease-out;
 }
 
 .animate-price-down {
-  animation: price-flash-down 500ms ease-out;
+  animation: price-flash-down 400ms ease-out;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
 }
 
 /* === Skeleton Loading === */
@@ -355,35 +323,6 @@ body::before {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
-}
-
-/* === Interactive States === */
-.interactive {
-  transition: all var(--transition-fast);
-}
-
-.interactive:hover {
-  background-color: var(--bg-hover);
-}
-
-.interactive:active {
-  background-color: var(--bg-active);
-  transform: scale(0.98);
-}
-
-/* === Glass Effect === */
-.glass {
-  background: rgba(15, 18, 24, 0.8);
-  backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid var(--border-subtle);
-}
-
-/* === Grid Background === */
-.grid-bg {
-  background-image:
-    linear-gradient(var(--border-subtle) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-  background-size: 40px 40px;
 }
 
 /* === Button Reset === */
@@ -412,7 +351,7 @@ textarea {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   padding: var(--space-2) var(--space-3);
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
 
 input:hover,
@@ -426,7 +365,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-primary-subtle);
+  box-shadow: 0 0 0 2px var(--accent-primary-subtle);
 }
 
 input::placeholder {
@@ -458,12 +397,12 @@ th {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 td {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
   font-size: var(--text-sm);
 }
@@ -483,40 +422,7 @@ tbody tr:hover {
 /* === Divider === */
 .divider {
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--border-default) 20%,
-    var(--border-default) 80%,
-    transparent
-  );
-  margin: var(--space-4) 0;
-}
-
-/* === Tooltip === */
-.tooltip {
-  position: absolute;
-  z-index: var(--z-tooltip);
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-lg);
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* === Glow Text Effect === */
-.glow-text {
-  text-shadow: 0 0 10px currentColor;
-}
-
-/* === Data Grid Lines for Chart === */
-.chart-grid {
-  stroke: var(--border-subtle);
-  stroke-dasharray: 4 4;
+  background: var(--border-default);
 }
 
 /* === Live Indicator === */
@@ -532,6 +438,5 @@ tbody tr:hover {
   height: 6px;
   background: var(--color-long);
   border-radius: 50%;
-  animation: pulse-glow 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px var(--color-long-glow);
+  animation: pulse-dot 2s ease-in-out infinite;
 }

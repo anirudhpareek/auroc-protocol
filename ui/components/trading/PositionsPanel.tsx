@@ -88,8 +88,8 @@ export function PositionsPanel({
 
   if (!isConnected) {
     return (
-      <div className="h-full flex items-center justify-center bg-[var(--bg-surface)]/60 backdrop-blur-sm">
-        <div className="text-center space-y-2">
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center space-y-1">
           <p className="text-[var(--text-muted)] text-[var(--text-sm)]">
             Connect wallet to view positions
           </p>
@@ -102,8 +102,8 @@ export function PositionsPanel({
   }
 
   return (
-    <Tabs defaultValue="positions" className="h-full flex flex-col bg-[var(--bg-surface)]/60 backdrop-blur-sm">
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[var(--border-subtle)]">
+    <Tabs defaultValue="positions" className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-3 pt-2 pb-0">
         <TabsList>
           <TabsTrigger value="positions">
             Positions ({positions.length})
@@ -115,7 +115,7 @@ export function PositionsPanel({
         </TabsList>
       </div>
 
-      <TabsContent value="positions" className="flex-1 overflow-auto mt-0 pt-2">
+      <TabsContent value="positions" className="flex-1 overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -140,7 +140,7 @@ export function PositionsPanel({
             ) : (
               positions.map((position) => (
                 <TableRow key={position.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-[var(--text-sm)]">
                     {position.market}
                   </TableCell>
                   <TableCell>
@@ -161,7 +161,7 @@ export function PositionsPanel({
                     <div className="flex flex-col items-end">
                       <span
                         className={cn(
-                          "tabular-nums font-medium",
+                          "tabular-nums font-medium text-[var(--text-sm)]",
                           position.pnl >= 0
                             ? "text-[var(--color-long)]"
                             : "text-[var(--color-short)]"
@@ -172,7 +172,7 @@ export function PositionsPanel({
                       </span>
                       <span
                         className={cn(
-                          "text-[var(--text-xs)] tabular-nums",
+                          "text-[var(--text-2xs)] tabular-nums",
                           position.pnlPercent >= 0
                             ? "text-[var(--color-long)]"
                             : "text-[var(--color-short)]"
@@ -205,7 +205,7 @@ export function PositionsPanel({
         </Table>
       </TabsContent>
 
-      <TabsContent value="orders" className="flex-1 overflow-auto mt-0 pt-2">
+      <TabsContent value="orders" className="flex-1 overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -226,7 +226,7 @@ export function PositionsPanel({
               orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.market}</TableCell>
-                  <TableCell className="uppercase text-[var(--text-xs)]">
+                  <TableCell className="uppercase text-[var(--text-2xs)]">
                     {order.type}
                   </TableCell>
                   <TableCell>
@@ -272,7 +272,7 @@ export function PositionsPanel({
         </Table>
       </TabsContent>
 
-      <TabsContent value="history" className="flex-1 overflow-auto mt-0 pt-2">
+      <TabsContent value="history" className="flex-1 overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>

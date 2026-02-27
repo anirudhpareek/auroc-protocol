@@ -60,10 +60,8 @@ export function TabsList({ children, className }: TabsListProps) {
     <div
       role="tablist"
       className={cn(
-        "flex items-center gap-0.5",
-        "p-1 rounded-[var(--radius-md)]",
-        "bg-[var(--bg-void)]",
-        "border border-[var(--border-subtle)]",
+        "flex items-center gap-0",
+        "border-b border-[var(--border-subtle)]",
         className
       )}
     >
@@ -95,19 +93,21 @@ export function TabsTrigger({
       disabled={disabled}
       onClick={() => setActiveTab(value)}
       className={cn(
-        "flex-1 px-3 py-1.5",
-        "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
-        "rounded-[var(--radius-sm)]",
-        "transition-all duration-200",
+        "relative px-3 py-2",
+        "text-[var(--text-xs)] font-medium",
+        "transition-colors duration-[var(--transition-fast)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]",
         isActive
-          ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
+          ? "text-[var(--text-primary)]"
           : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]",
         disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >
       {children}
+      {isActive && (
+        <span className="absolute bottom-0 left-0 right-0 h-px bg-[var(--accent-primary)]" />
+      )}
     </button>
   );
 }
@@ -128,14 +128,13 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
   return (
     <div
       role="tabpanel"
-      className={cn("mt-4 animate-fade-in", className)}
+      className={cn("mt-0 animate-fade-in", className)}
     >
       {children}
     </div>
   );
 }
 
-// Toggle tabs specifically for Long/Short selection
 interface ToggleTabsProps {
   value: "long" | "short";
   onChange: (value: "long" | "short") => void;
@@ -156,12 +155,12 @@ export function LongShortTabs({ value, onChange, className }: ToggleTabsProps) {
       <button
         onClick={() => onChange("long")}
         className={cn(
-          "flex-1 py-2.5 px-4",
+          "flex-1 py-2 px-4",
           "text-[var(--text-xs)] font-bold uppercase tracking-wider",
           "rounded-[var(--radius-sm)]",
-          "transition-all duration-200",
+          "transition-all duration-[var(--transition-fast)]",
           value === "long"
-            ? "bg-[var(--color-long)] text-[var(--bg-void)] shadow-[var(--glow-long)]"
+            ? "bg-[var(--color-long)] text-[var(--bg-void)]"
             : "text-[var(--text-muted)] hover:text-[var(--color-long)] hover:bg-[var(--color-long-subtle)]"
         )}
       >
@@ -170,12 +169,12 @@ export function LongShortTabs({ value, onChange, className }: ToggleTabsProps) {
       <button
         onClick={() => onChange("short")}
         className={cn(
-          "flex-1 py-2.5 px-4",
+          "flex-1 py-2 px-4",
           "text-[var(--text-xs)] font-bold uppercase tracking-wider",
           "rounded-[var(--radius-sm)]",
-          "transition-all duration-200",
+          "transition-all duration-[var(--transition-fast)]",
           value === "short"
-            ? "bg-[var(--color-short)] text-white shadow-[var(--glow-short)]"
+            ? "bg-[var(--color-short)] text-white"
             : "text-[var(--text-muted)] hover:text-[var(--color-short)] hover:bg-[var(--color-short-subtle)]"
         )}
       >

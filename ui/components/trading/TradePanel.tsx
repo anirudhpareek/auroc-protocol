@@ -8,7 +8,6 @@ import {
   NumericInput,
   LongShortTabs,
   LeverageSlider,
-  Card,
 } from "@/components/ui";
 
 interface TradePanelProps {
@@ -42,19 +41,16 @@ export function TradePanel({
   const [limitPrice, setLimitPrice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate position size
   const positionSize = margin
     ? (parseFloat(margin) * leverage).toFixed(2)
     : "0.00";
 
-  // Calculate estimated liquidation price
   const estimatedLiqPrice = useCallback(() => {
     if (!margin || !markPrice) return "-";
     const price = parseFloat(markPrice.replace(/,/g, ""));
     const m = parseFloat(margin);
     if (isNaN(price) || isNaN(m) || m === 0) return "-";
 
-    // Simplified liquidation price calculation
     const margin_ratio = 0.9 / leverage;
     const liqPrice =
       side === "long"
@@ -83,11 +79,11 @@ export function TradePanel({
   };
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-surface)]/60 backdrop-blur-sm">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-[var(--border-subtle)]">
+      <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
         <div className="flex items-center justify-between">
-          <h2 className="text-[var(--text-base)] font-semibold tracking-tight">
+          <h2 className="text-[var(--text-sm)] font-semibold tracking-tight">
             Trade
           </h2>
           <span className="text-[var(--text-2xs)] text-[var(--accent-primary)] uppercase tracking-widest font-medium">
@@ -97,20 +93,20 @@ export function TradePanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* Long/Short Toggle */}
         <LongShortTabs value={side} onChange={setSide} />
 
         {/* Order Type */}
-        <div className="flex gap-1 p-1 bg-[var(--bg-void)] rounded-[var(--radius-md)]">
+        <div className="flex gap-1 p-0.5 bg-[var(--bg-void)] rounded-[var(--radius-md)] border border-[var(--border-subtle)]">
           <button
             onClick={() => setOrderType("market")}
             className={cn(
-              "flex-1 py-2 rounded-[var(--radius-sm)]",
-              "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
-              "transition-all duration-200",
+              "flex-1 py-1.5 rounded-[var(--radius-sm)]",
+              "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+              "transition-colors duration-[var(--transition-fast)]",
               orderType === "market"
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
@@ -119,11 +115,11 @@ export function TradePanel({
           <button
             onClick={() => setOrderType("limit")}
             className={cn(
-              "flex-1 py-2 rounded-[var(--radius-sm)]",
-              "text-[var(--text-xs)] font-semibold uppercase tracking-wider",
-              "transition-all duration-200",
+              "flex-1 py-1.5 rounded-[var(--radius-sm)]",
+              "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
+              "transition-colors duration-[var(--transition-fast)]",
               orderType === "limit"
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
@@ -154,22 +150,21 @@ export function TradePanel({
         />
 
         {/* Quick margin buttons */}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1">
           {[25, 50, 75, 100].map((pct) => (
             <button
               key={pct}
               onClick={() => {
-                // TODO: Get actual balance and set percentage
                 setMargin((100 * pct / 100).toString());
               }}
               className={cn(
-                "flex-1 py-1.5 rounded-[var(--radius-sm)]",
+                "flex-1 py-1 rounded-[var(--radius-sm)]",
                 "text-[var(--text-2xs)] font-semibold",
                 "bg-[var(--bg-void)] text-[var(--text-muted)]",
                 "border border-[var(--border-subtle)]",
                 "hover:border-[var(--border-default)] hover:text-[var(--text-secondary)]",
-                "transition-all duration-150",
-                "active:scale-95"
+                "transition-colors duration-[var(--transition-fast)]",
+                "active:scale-[0.97]"
               )}
             >
               {pct}%
@@ -185,7 +180,7 @@ export function TradePanel({
         />
 
         {/* Order Summary */}
-        <div className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-void)]/80 border border-[var(--border-subtle)] space-y-2.5">
+        <div className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-void)] border border-[var(--border-subtle)] space-y-2">
           <SummaryRow
             label="Position Size"
             value={`$${positionSize}`}
@@ -196,7 +191,7 @@ export function TradePanel({
             value={`$${markPrice}`}
             mono
           />
-          <div className="h-px bg-[var(--border-subtle)] my-2" />
+          <div className="h-px bg-[var(--border-subtle)]" />
           <SummaryRow
             label="Est. Liquidation"
             value={`$${estimatedLiqPrice()}`}
@@ -212,7 +207,7 @@ export function TradePanel({
       </div>
 
       {/* Submit Button */}
-      <div className="p-4 border-t border-[var(--border-subtle)]">
+      <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
         {isConnected ? (
           <Button
             variant={side}

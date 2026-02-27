@@ -5,15 +5,14 @@ import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
 import type { LivelinePoint, CandlePoint } from "liveline";
 
-// Dynamically import Liveline to avoid SSR issues with canvas
 const Liveline = dynamic(
   () => import("liveline").then((mod) => mod.Liveline),
   {
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-[var(--bg-void)]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
           <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
             Loading Chart
           </span>
@@ -35,7 +34,7 @@ export function ChartPanel({
   className,
 }: ChartPanelProps) {
   const [mode, setMode] = useState<"line" | "candle">("line");
-  const [windowSecs, setWindowSecs] = useState(3600); // 1H in seconds
+  const [windowSecs, setWindowSecs] = useState(3600);
   const [lineData, setLineData] = useState<LivelinePoint[]>([]);
   const [candleData, setCandleData] = useState<CandlePoint[]>([]);
   const [currentValue, setCurrentValue] = useState(currentPrice);
@@ -50,12 +49,10 @@ export function ChartPanel({
     { label: "1D", secs: 86400 },
   ];
 
-  // Ensure client-side only rendering
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Generate mock data on mount
   useEffect(() => {
     if (!isClient) return;
 
@@ -64,15 +61,13 @@ export function ChartPanel({
     const candles: CandlePoint[] = [];
     let price = currentPrice;
 
-    // Generate historical data - 100 points
     for (let i = 100; i >= 0; i--) {
-      const time = now - i * 60000; // 1 minute intervals
+      const time = now - i * 60000;
       const change = (Math.random() - 0.5) * 5;
       price += change;
 
       points.push({ time, value: price });
 
-      // Generate candle data every 5 minutes
       if (i % 5 === 0) {
         const open = price;
         const volatility = Math.random() * 10;
@@ -89,7 +84,6 @@ export function ChartPanel({
     setCurrentValue(price);
   }, [currentPrice, isClient]);
 
-  // Simulate live updates
   useEffect(() => {
     if (!isClient || lineData.length === 0) return;
 
@@ -100,13 +94,11 @@ export function ChartPanel({
       setCurrentValue((prev) => {
         const newValue = prev + change;
 
-        // Update line data
         setLineData((prevData) => {
           const newData = [...prevData.slice(-99), { time: now, value: newValue }];
           return newData;
         });
 
-        // Update last candle
         setCandleData((prevCandles) => {
           if (prevCandles.length === 0) return prevCandles;
           const newCandles = [...prevCandles];
@@ -130,20 +122,20 @@ export function ChartPanel({
   return (
     <div className={cn("h-full flex flex-col bg-[var(--bg-void)]", className)}>
       {/* Chart Controls */}
-      <div className="h-11 flex items-center justify-between px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 backdrop-blur-sm">
+      <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* Left: Timeframe Selector */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0">
           {timeframes.map((tf) => (
             <button
               key={tf.secs}
               onClick={() => setWindowSecs(tf.secs)}
               className={cn(
-                "px-2.5 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
-                "transition-all duration-200",
+                "px-2 py-1 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold",
+                "transition-colors duration-[var(--transition-fast)]",
                 windowSecs === tf.secs
-                  ? "bg-[var(--accent-primary-subtle)] text-[var(--accent-primary)] border border-[var(--accent-primary-glow)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent"
+                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
               {tf.label}
@@ -151,16 +143,15 @@ export function ChartPanel({
           ))}
         </div>
 
-        {/* Right: Chart Type & Tools */}
-        <div className="flex items-center gap-2">
-          {/* Mode Toggle */}
-          <div className="flex items-center gap-0.5 p-0.5 bg-[var(--bg-void)] rounded-[var(--radius-sm)] border border-[var(--border-subtle)]">
+        {/* Right: Chart Type */}
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0 p-0.5 bg-[var(--bg-void)] rounded-[var(--radius-sm)] border border-[var(--border-subtle)]">
             <button
               onClick={() => setMode("line")}
               className={cn(
-                "px-2.5 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
-                "transition-all duration-200",
+                "px-2 py-0.5 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold",
+                "transition-colors duration-[var(--transition-fast)]",
                 mode === "line"
                   ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -171,9 +162,9 @@ export function ChartPanel({
             <button
               onClick={() => setMode("candle")}
               className={cn(
-                "px-2.5 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
-                "transition-all duration-200",
+                "px-2 py-0.5 rounded-[var(--radius-sm)]",
+                "text-[var(--text-2xs)] font-semibold",
+                "transition-colors duration-[var(--transition-fast)]",
                 mode === "candle"
                   ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -183,18 +174,17 @@ export function ChartPanel({
             </button>
           </div>
 
-          {/* Fullscreen */}
           <button
             className={cn(
               "p-1.5 rounded-[var(--radius-sm)]",
               "text-[var(--text-muted)]",
-              "hover:text-[var(--accent-primary)] hover:bg-[var(--bg-hover)]",
-              "transition-all duration-200"
+              "hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]",
+              "transition-colors duration-[var(--transition-fast)]"
             )}
             aria-label="Expand chart"
           >
             <svg
-              className="w-4 h-4"
+              className="w-3.5 h-3.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -242,12 +232,12 @@ export function ChartPanel({
               left: 12,
             }}
             className="w-full h-full"
-            style={{ background: "#05060a" }}
+            style={{ background: "var(--bg-void)" }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-void)]">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
               <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
                 Loading Chart
               </span>

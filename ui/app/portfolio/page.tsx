@@ -10,7 +10,6 @@ export default function PortfolioPage() {
   const { isConnected, address } = useAccount();
   const { positions, isLoading } = usePositions();
 
-  // Calculate portfolio stats
   const totalValue = positions.reduce((acc, pos) => {
     return acc + Number(pos.margin) / 1e6;
   }, 0);
@@ -21,11 +20,11 @@ export default function PortfolioPage() {
 
   const positionsForPanel = positions.map((p, i) => ({
     id: p.id,
-    market: "XAU/USD", // TODO: Map asset ID to symbol
+    market: "XAU/USD",
     side: p.isLong ? ("long" as const) : ("short" as const),
     size: (Number(p.size) / 1e18).toFixed(2),
     entryPrice: (Number(p.entryPrice) / 1e18).toFixed(2),
-    markPrice: "2341.50", // TODO: Get actual mark price
+    markPrice: "2341.50",
     pnl: Number(p.unrealizedPnL) / 1e18,
     pnlPercent: ((Number(p.unrealizedPnL) / 1e18) / (Number(p.margin) / 1e6)) * 100 || 0,
     margin: (Number(p.margin) / 1e6).toFixed(2),
@@ -37,18 +36,18 @@ export default function PortfolioPage() {
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)]">
       <Header />
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
           {/* Header */}
           <div>
-            <h1 className="text-[var(--text-2xl)] font-bold">Portfolio</h1>
-            <p className="text-[var(--text-secondary)] mt-1">
+            <h1 className="text-[var(--text-xl)] font-bold">Portfolio</h1>
+            <p className="text-[var(--text-secondary)] text-[var(--text-sm)] mt-0.5">
               Manage your positions and view performance
             </p>
           </div>
 
           {!isConnected ? (
             <Card padding="lg" className="text-center">
-              <p className="text-[var(--text-muted)] mb-4">
+              <p className="text-[var(--text-muted)] text-[var(--text-sm)] mb-4">
                 Connect your wallet to view your portfolio
               </p>
               <Button variant="primary">Connect Wallet</Button>
@@ -56,7 +55,7 @@ export default function PortfolioPage() {
           ) : (
             <>
               {/* Portfolio Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card padding="md">
                   <StatCard
                     label="Total Margin"

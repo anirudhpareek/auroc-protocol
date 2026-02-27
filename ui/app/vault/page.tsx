@@ -50,7 +50,6 @@ export default function VaultRoute() {
     }
   };
 
-  // Format vault data
   const vaultData = {
     totalDeposits: totalAssets
       ? (Number(totalAssets) / 1e6).toLocaleString("en-US", {
@@ -82,7 +81,7 @@ export default function VaultRoute() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)]">
       <Header />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-6">
         <VaultPage
           vaultData={vaultData}
           userPosition={userPosition}
