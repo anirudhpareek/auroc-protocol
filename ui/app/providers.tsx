@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider } from 'wagmi';
-import { config } from '@/lib/wagmi';
-import '@rainbow-me/rainbowkit/styles.css';
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+import { config } from "@/lib/wagmi";
+import { ToastProvider } from "@/components/ui/toast";
+import "@rainbow-me/rainbowkit/styles.css";
 
 const queryClient = new QueryClient();
 
@@ -14,12 +15,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={darkTheme({
-            accentColor: '#7c3aed',
-            accentColorForeground: 'white',
-            borderRadius: 'medium',
+            accentColor: "#00d4aa",
+            accentColorForeground: "#060810",
+            borderRadius: "small",
+            fontStack: "system",
+            overlayBlur: "small",
           })}
         >
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

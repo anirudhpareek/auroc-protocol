@@ -1,26 +1,442 @@
 @import "tailwindcss";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/outfit/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
+/* ============================================
+   AUROC PROTOCOL — Trading Terminal
+   Clean, precise, professional.
+   ============================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Backgrounds — Layered depth (5 levels) === */
+  --bg-void: #060810;
+  --bg-base: #0b0d14;
+  --bg-surface: #10131a;
+  --bg-elevated: #161921;
+  --bg-hover: #1c1f29;
+  --bg-active: #232733;
+
+  /* === Text — Clear hierarchy === */
+  --text-primary: #e8eaf0;
+  --text-secondary: #8891a4;
+  --text-muted: #505a6a;
+  --text-disabled: #363d4a;
+
+  /* === Borders — Subtle structure === */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* === Accent — Teal === */
+  --accent-primary: #00d4aa;
+  --accent-primary-dim: #00a888;
+  --accent-primary-glow: rgba(0, 212, 170, 0.15);
+  --accent-primary-subtle: rgba(0, 212, 170, 0.08);
+
+  /* === Trading Colors === */
+  --color-long: #22c55e;
+  --color-long-dim: #16a34a;
+  --color-long-glow: rgba(34, 197, 94, 0.2);
+  --color-long-subtle: rgba(34, 197, 94, 0.08);
+
+  --color-short: #ef4444;
+  --color-short-dim: #dc2626;
+  --color-short-glow: rgba(239, 68, 68, 0.2);
+  --color-short-subtle: rgba(239, 68, 68, 0.08);
+
+  /* === Warning === */
+  --color-warning: #f59e0b;
+  --color-warning-glow: rgba(245, 158, 11, 0.2);
+  --color-warning-subtle: rgba(245, 158, 11, 0.08);
+
+  /* === Regime Colors === */
+  --regime-open: #22c55e;
+  --regime-off-hours: #f59e0b;
+  --regime-transition: #00d4aa;
+  --regime-stress: #ef4444;
+
+  /* === Typography === */
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  /* Type Scale */
+  --text-2xs: 0.625rem;   /* 10px */
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 2rem;       /* 32px */
+  --text-4xl: 2.5rem;     /* 40px */
+
+  /* === Spacing — 4px grid === */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* === Radii === */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  /* === Transitions === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 120ms var(--ease-out-expo);
+  --transition-base: 180ms var(--ease-out-expo);
+  --transition-slow: 300ms var(--ease-out-expo);
+
+  /* === Z-Index === */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal: 200;
+  --z-tooltip: 300;
+  --z-toast: 400;
 }
 
+/* Tailwind v4 Theme */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-void: var(--bg-void);
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent-primary);
+  --color-long: var(--color-long);
+  --color-short: var(--color-short);
+  --color-warning: var(--color-warning);
+
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* === Base Styles === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+}
+
+/* === Focus States === */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* === Selection === */
+::selection {
+  background: var(--accent-primary-subtle);
+  color: var(--text-primary);
+}
+
+/* === Price Display === */
+.price-display {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.price-up {
+  color: var(--color-long);
+}
+
+.price-down {
+  color: var(--color-short);
+}
+
+/* Tabular numbers for alignment */
+.tabular-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* === Regime Badges === */
+.regime-open {
+  background: var(--color-long-subtle);
+  color: var(--regime-open);
+  box-shadow: inset 0 0 0 1px var(--color-long-glow);
+}
+
+.regime-off-hours {
+  background: var(--color-warning-subtle);
+  color: var(--regime-off-hours);
+  box-shadow: inset 0 0 0 1px var(--color-warning-glow);
+}
+
+.regime-transition {
+  background: var(--accent-primary-subtle);
+  color: var(--regime-transition);
+  box-shadow: inset 0 0 0 1px var(--accent-primary-glow);
+}
+
+.regime-stress {
+  background: var(--color-short-subtle);
+  color: var(--regime-stress);
+  box-shadow: inset 0 0 0 1px var(--color-short-glow);
+}
+
+/* === Panel === */
+.panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+/* === Animations === */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes price-flash-up {
+  0% { background-color: var(--color-long-subtle); }
+  100% { background-color: transparent; }
+}
+
+@keyframes price-flash-down {
+  0% { background-color: var(--color-short-subtle); }
+  100% { background-color: transparent; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-slide-up {
+  animation: slide-up var(--transition-slow) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in var(--transition-base) forwards;
+}
+
+.animate-price-up {
+  animation: price-flash-up 400ms ease-out;
+}
+
+.animate-price-down {
+  animation: price-flash-down 400ms ease-out;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* === Skeleton Loading === */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 0%,
+    var(--bg-hover) 50%,
+    var(--bg-elevated) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* === Button Reset === */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* === Input Styles === */
+input,
+select,
+textarea {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--transition-fast);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary-subtle);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Number inputs - no spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  font-family: var(--font-mono);
+}
+
+/* === Table Styles === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-sm);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+tbody tr:hover {
+  background-color: var(--bg-hover);
+}
+
+/* === Divider === */
+.divider {
+  height: 1px;
+  background: var(--border-default);
+}
+
+/* === Live Indicator === */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.live-indicator::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--color-long);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
 }

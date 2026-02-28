@@ -1,65 +1,239 @@
-'use client';
+"use client";
 
-import { useAllMarkets } from '@/hooks/useMarketData';
-import { MarketCard } from '@/components/MarketCard';
-import { PositionList } from '@/components/PositionList';
-import { VaultPanel } from '@/components/VaultPanel';
-import { TradePanel } from '@/components/TradePanel';
-import { useAccount } from 'wagmi';
+import { useState, useMemo, useEffect } from "react";
+import { useAccount } from "wagmi";
+import { TradingLayout, MobileLayout } from "@/components/layout";
+import {
+  MarketSelector,
+  MarketInfo,
+  ChartPanel,
+  TradePanel,
+  PositionsPanel,
+} from "@/components/trading";
+import { useAllMarkets } from "@/hooks/useMarketData";
+import { usePositions } from "@/hooks/usePositions";
+import { type RegimeType } from "@/components/ui";
 
-export default function Home() {
-  const { isConnected } = useAccount();
-  const { markets, isLoading } = useAllMarkets();
+// Mock data for demo - will be replaced with real contract data
+const mockMarkets = [
+  {
+    id: "xau-usd",
+    name: "Gold Spot",
+    symbol: "XAU/USD",
+    price: "2,341.50",
+    change24h: 1.24,
+    regime: "open" as RegimeType,
+    volume24h: "12.5M",
+  },
+  {
+    id: "spx-usd",
+    name: "S&P 500",
+    symbol: "SPX/USD",
+    price: "5,234.18",
+    change24h: -0.32,
+    regime: "off-hours" as RegimeType,
+    volume24h: "8.2M",
+  },
+];
 
+// Hook to detect mobile
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
+export default function TradePage() {
+  const { address } = useAccount();
+  const isMobile = useIsMobile();
+  const [selectedMarketId, setSelectedMarketId] = useState("xau-usd");
+  const [mobileTab, setMobileTab] = useState<"chart" | "trade" | "positions">("chart");
+
+  // Fetch market data
+  const { markets: contractMarkets, isLoading: marketsLoading } = useAllMarkets();
+
+  // Fetch positions
+  const { positions: rawPositions, isLoading: positionsLoading } = usePositions(
+    address
+  );
+
+  // Merge mock data with contract data
+  const markets = useMemo(() => {
+    if (!contractMarkets || contractMarkets.length === 0) {
+      return mockMarkets;
+    }
+
+    return mockMarkets.map((mock) => {
+      const contract = contractMarkets.find(
+        (c) =>
+          c.id.toLowerCase().includes(mock.id.split("-")[0]) ||
+          mock.id.includes(c.id.toLowerCase())
+      );
+
+      if (contract) {
+        const priceValue = contract.markPrice
+          ? (Number(contract.markPrice / BigInt(10 ** 16)) / 100).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : mock.price;
+
+        return {
+          ...mock,
+          price: priceValue,
+          regime: (["open", "off-hours", "transition", "stress"][
+            contract.regime || 0
+          ] || "open") as RegimeType,
+        };
+      }
+      return mock;
+    });
+  }, [contractMarkets]);
+
+  const selectedMarket = markets.find((m) => m.id === selectedMarketId) || markets[0];
+
+  // Transform positions for display
+  const positions = useMemo(() => {
+    if (!rawPositions) return [];
+
+    return rawPositions
+      .filter((p) => p.size > 0n)
+      .map((p, i) => ({
+        id: `pos-${i}`,
+        market: selectedMarket?.symbol || "XAU/USD",
+        side: p.isLong ? ("long" as const) : ("short" as const),
+        size: (Number(p.size) / 1e18).toFixed(2),
+        entryPrice: (Number(p.entryPrice) / 1e18).toFixed(2),
+        markPrice: selectedMarket?.price?.toString().replace(/,/g, "") || "0",
+        pnl: Number(p.size) / 1e18 * 0.05,
+        pnlPercent: 2.5,
+        margin: (Number(p.margin) / 1e6).toFixed(2),
+        leverage: 5,
+        liquidationPrice: (Number(p.entryPrice) / 1e18 * 0.85).toFixed(2),
+      }));
+  }, [rawPositions, selectedMarket]);
+
+  const handleSubmitOrder = async (order: {
+    side: "long" | "short";
+    size: string;
+    margin: string;
+    leverage: number;
+  }) => {
+    console.log("Submitting order:", order);
+    // TODO: Implement order submission
+  };
+
+  const handleClosePosition = async (positionId: string) => {
+    console.log("Closing position:", positionId);
+    // TODO: Implement position closing
+  };
+
+  // Mobile content renderer
+  const renderMobileContent = () => {
+    switch (mobileTab) {
+      case "chart":
+        return (
+          <div className="h-full flex flex-col">
+            <MarketInfo
+              market={selectedMarket}
+              markPrice={selectedMarket?.price?.toString()}
+              indexPrice={selectedMarket?.price?.toString()}
+              fundingRate="0.0100"
+              nextFunding="00:42:15"
+            />
+            <ChartPanel
+              symbol={selectedMarket?.symbol || "XAU/USD"}
+              className="flex-1"
+            />
+          </div>
+        );
+      case "trade":
+        return (
+          <TradePanel
+            marketSymbol={selectedMarket?.symbol || "XAU/USD"}
+            markPrice={selectedMarket?.price?.toString().replace(/,/g, "") || "0"}
+            maxLeverage={10}
+            onSubmitOrder={handleSubmitOrder}
+          />
+        );
+      case "positions":
+        return (
+          <PositionsPanel
+            positions={positions}
+            orders={[]}
+            trades={[]}
+            isLoading={positionsLoading}
+            onClosePosition={handleClosePosition}
+          />
+        );
+    }
+  };
+
+  // Render mobile layout
+  if (isMobile) {
+    return (
+      <MobileLayout
+        activeTab={mobileTab}
+        onTabChange={setMobileTab}
+      >
+        {renderMobileContent()}
+      </MobileLayout>
+    );
+  }
+
+  // Render desktop layout
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <section id="markets" className="mb-12">
-        <h2 className="text-2xl font-bold text-white mb-6">Markets</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isLoading ? (
-            <>
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-pulse h-48" />
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-pulse h-48" />
-            </>
-          ) : (
-            markets.map((market) => (
-              <MarketCard key={market.id} market={market} />
-            ))
-          )}
+    <TradingLayout
+      leftPanel={
+        <MarketSelector
+          markets={markets}
+          selectedMarket={selectedMarketId}
+          onSelectMarket={setSelectedMarketId}
+          isLoading={marketsLoading}
+        />
+      }
+      centerTop={
+        <div className="h-full flex flex-col">
+          <MarketInfo
+            market={selectedMarket}
+            markPrice={selectedMarket?.price?.toString()}
+            indexPrice={selectedMarket?.price?.toString()}
+            fundingRate="0.0100"
+            nextFunding="00:42:15"
+          />
+          <ChartPanel
+            symbol={selectedMarket?.symbol || "XAU/USD"}
+            className="flex-1"
+          />
         </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <section id="positions">
-            <h2 className="text-2xl font-bold text-white mb-6">Your Positions</h2>
-            {isConnected ? (
-              <PositionList />
-            ) : (
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center">
-                <p className="text-gray-400">Connect wallet to view positions</p>
-              </div>
-            )}
-          </section>
-
-          <section id="vault">
-            <h2 className="text-2xl font-bold text-white mb-6">Liquidity Pool</h2>
-            <VaultPanel />
-          </section>
-        </div>
-
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-6">Trade</h2>
-          <TradePanel />
-        </div>
-      </div>
-
-      <footer className="mt-16 pt-8 border-t border-gray-800">
-        <div className="text-center text-gray-500 text-sm">
-          <p>RWA Perp DEX - 24/7 Perpetual Futures for Real World Assets</p>
-          <p className="mt-2">Testnet only - Arbitrum Sepolia</p>
-        </div>
-      </footer>
-    </div>
+      }
+      centerBottom={
+        <PositionsPanel
+          positions={positions}
+          orders={[]}
+          trades={[]}
+          isLoading={positionsLoading}
+          onClosePosition={handleClosePosition}
+        />
+      }
+      rightPanel={
+        <TradePanel
+          marketSymbol={selectedMarket?.symbol || "XAU/USD"}
+          markPrice={selectedMarket?.price?.toString().replace(/,/g, "") || "0"}
+          maxLeverage={10}
+          onSubmitOrder={handleSubmitOrder}
+        />
+      }
+    />
   );
 }
