@@ -1,2 +1,2 @@
 export { Header } from "./Header";
-export { TradingLayout, MobileLayout } from "./TradingLayout";
+export { TradingLayout } from "./TradingLayout";

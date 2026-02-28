@@ -1,139 +1,26 @@
 @import "tailwindcss";
 
-/* ============================================
-   AUROC PROTOCOL — Trojan-Inspired Trading UI
-   Clean, dark, professional. Yellow accent.
-   ============================================ */
-
 :root {
-  /* === Backgrounds — Pure black base === */
-  --bg-void: #000000;
-  --bg-base: #0a0a0a;
-  --bg-surface: #111111;
-  --bg-elevated: #1a1a1a;
-  --bg-hover: #222222;
-  --bg-active: #2a2a2a;
-  --bg-card: #0d0d0d;
+  --black: #000000;
+  --gray-950: #0a0a0a;
+  --gray-900: #111111;
+  --gray-800: #1a1a1a;
+  --gray-700: #262626;
+  --gray-600: #404040;
+  --gray-500: #737373;
+  --gray-400: #a3a3a3;
+  --gray-300: #d4d4d4;
+  --white: #ffffff;
 
-  /* === Text — Clear hierarchy === */
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1a1;
-  --text-muted: #666666;
-  --text-disabled: #444444;
-
-  /* === Borders — Minimal structure === */
-  --border-subtle: #1a1a1a;
-  --border-default: #262626;
-  --border-strong: #333333;
-
-  /* === Accent — Yellow/Gold (Trojan style) === */
-  --accent-primary: #f5c451;
-  --accent-primary-dim: #d4a73e;
-  --accent-primary-glow: rgba(245, 196, 81, 0.15);
-  --accent-primary-subtle: rgba(245, 196, 81, 0.08);
-
-  /* === Trading Colors (standard green/red) === */
-  --color-long: #22c55e;
-  --color-long-dim: #16a34a;
-  --color-long-glow: rgba(34, 197, 94, 0.2);
-  --color-long-subtle: rgba(34, 197, 94, 0.1);
-  --color-long-bg: rgba(34, 197, 94, 0.15);
-
-  --color-short: #ef4444;
-  --color-short-dim: #dc2626;
-  --color-short-glow: rgba(239, 68, 68, 0.2);
-  --color-short-subtle: rgba(239, 68, 68, 0.1);
-  --color-short-bg: rgba(239, 68, 68, 0.15);
-
-  /* === Warning/Info === */
-  --color-warning: #f59e0b;
-  --color-warning-subtle: rgba(245, 158, 11, 0.1);
-  --color-info: #3b82f6;
-  --color-info-subtle: rgba(59, 130, 246, 0.1);
-
-  /* === Regime Colors === */
-  --regime-open: #22c55e;
-  --regime-off-hours: #f59e0b;
-  --regime-transition: #3b82f6;
-  --regime-stress: #ef4444;
-
-  /* === Typography === */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
-
-  /* Type Scale */
-  --text-2xs: 0.625rem;   /* 10px */
-  --text-xs: 0.6875rem;   /* 11px */
-  --text-sm: 0.75rem;     /* 12px */
-  --text-base: 0.8125rem; /* 13px */
-  --text-md: 0.875rem;    /* 14px */
-  --text-lg: 1rem;        /* 16px */
-  --text-xl: 1.125rem;    /* 18px */
-  --text-2xl: 1.5rem;     /* 24px */
-  --text-3xl: 2rem;       /* 32px */
-
-  /* === Spacing === */
-  --space-0: 0;
-  --space-1: 0.25rem;    /* 4px */
-  --space-2: 0.5rem;     /* 8px */
-  --space-3: 0.75rem;    /* 12px */
-  --space-4: 1rem;       /* 16px */
-  --space-5: 1.25rem;    /* 20px */
-  --space-6: 1.5rem;     /* 24px */
-  --space-8: 2rem;       /* 32px */
-
-  /* === Radii === */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-full: 9999px;
-
-  /* === Shadows === */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.7);
-  --shadow-glow-long: 0 0 20px rgba(34, 197, 94, 0.3);
-  --shadow-glow-short: 0 0 20px rgba(239, 68, 68, 0.3);
-
-  /* === Transitions === */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-fast: 100ms var(--ease-out);
-  --transition-base: 150ms var(--ease-out);
-  --transition-slow: 250ms var(--ease-out);
-
-  /* === Z-Index === */
-  --z-dropdown: 50;
-  --z-sticky: 100;
-  --z-modal: 200;
-  --z-tooltip: 300;
-  --z-toast: 400;
+  --green: #22c55e;
+  --green-dark: #16a34a;
+  --red: #ef4444;
+  --red-dark: #dc2626;
+  --yellow: #facc15;
+  --blue: #3b82f6;
 }
 
-/* Tailwind v4 Theme */
-@theme inline {
-  --color-bg-void: var(--bg-void);
-  --color-bg-base: var(--bg-base);
-  --color-bg-surface: var(--bg-surface);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-hover: var(--bg-hover);
-
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-
-  --color-border-subtle: var(--border-subtle);
-  --color-border-default: var(--border-default);
-
-  --color-accent: var(--accent-primary);
-  --color-long: var(--color-long);
-  --color-short: var(--color-short);
-}
-
-/* === Base Reset === */
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -141,21 +28,16 @@
 
 html {
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--bg-void);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
+  background: var(--black);
+  color: var(--white);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
   line-height: 1.5;
-  min-height: 100vh;
-  overflow-x: hidden;
 }
 
-/* === Scrollbar === */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -166,133 +48,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: var(--radius-full);
+  background: var(--gray-700);
+  border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-default) transparent;
-}
-
-/* === Focus States === */
-:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-/* === Selection === */
-::selection {
-  background: var(--accent-primary-subtle);
-  color: var(--text-primary);
-}
-
-/* === Tabular Numbers === */
-.tabular-nums {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-/* === Price Display === */
-.price-up {
-  color: var(--color-long);
-}
-
-.price-down {
-  color: var(--color-short);
-}
-
-/* === Regime Badges === */
-.regime-open {
-  background: var(--color-long-subtle);
-  color: var(--regime-open);
-  border: 1px solid var(--color-long-glow);
-}
-
-.regime-off-hours {
-  background: var(--color-warning-subtle);
-  color: var(--regime-off-hours);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.regime-transition {
-  background: var(--color-info-subtle);
-  color: var(--regime-transition);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.regime-stress {
-  background: var(--color-short-subtle);
-  color: var(--regime-stress);
-  border: 1px solid var(--color-short-glow);
-}
-
-/* === Animations === */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.animate-fade-in {
-  animation: fade-in var(--transition-base) forwards;
-}
-
-.animate-slide-up {
-  animation: slide-up var(--transition-slow) forwards;
-}
-
-.animate-pulse {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* === Skeleton === */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-elevated) 0%,
-    var(--bg-hover) 50%,
-    var(--bg-elevated) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-}
-
-/* === Button Reset === */
-button {
+input, button, select {
   font-family: inherit;
   font-size: inherit;
+}
+
+button {
   cursor: pointer;
   border: none;
   background: none;
@@ -303,117 +68,16 @@ button:disabled {
   opacity: 0.5;
 }
 
-/* === Input Base === */
-input,
-select,
-textarea {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  padding: var(--space-2) var(--space-3);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-input:hover,
-select:hover {
-  border-color: var(--border-strong);
-}
-
-input:focus,
-select:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px var(--accent-primary-subtle);
-}
-
-input::placeholder {
-  color: var(--text-muted);
-}
-
-/* Number inputs - no spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
-  margin: 0;
 }
 
 input[type="number"] {
   -moz-appearance: textfield;
-  font-family: var(--font-mono);
 }
 
-/* === Table Base === */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  text-align: left;
-  font-weight: 500;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-td {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-}
-
-tr:not(:last-child) td {
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-tbody tr {
-  transition: background-color var(--transition-fast);
-}
-
-tbody tr:hover {
-  background-color: var(--bg-hover);
-}
-
-/* === Ticker Ribbon === */
-.ticker-ribbon {
-  display: flex;
-  animation: ticker-scroll 60s linear infinite;
-}
-
-.ticker-ribbon:hover {
-  animation-play-state: paused;
-}
-
-/* === Panel Card === */
-.panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-}
-
-/* === Divider === */
-.divider {
-  height: 1px;
-  background: var(--border-subtle);
-}
-
-/* === Live Indicator === */
-.live-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--color-long);
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* === Chart Container === */
-.chart-container {
-  background: var(--bg-void);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }

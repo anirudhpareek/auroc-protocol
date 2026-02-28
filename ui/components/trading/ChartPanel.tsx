@@ -1,259 +1,140 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { cn } from "@/lib/cn";
-import type { LivelinePoint, CandlePoint } from "liveline";
+import { useState } from "react";
 
-const Liveline = dynamic(
-  () => import("liveline").then((mod) => mod.Liveline),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-[var(--bg-void)]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
-            Loading Chart
-          </span>
-        </div>
-      </div>
-    ),
-  }
-);
+const assets = [
+  { symbol: "BTC", name: "Bitcoin", price: "97,432.50", change: "+2.34%" },
+  { symbol: "XAU", name: "Gold", price: "2,892.40", change: "+0.45%" },
+  { symbol: "SPX", name: "S&P 500", price: "5,234.18", change: "-0.12%" },
+];
 
-interface ChartPanelProps {
-  symbol: string;
-  currentPrice?: number;
-  className?: string;
-}
+const timeframes = ["1m", "5m", "15m", "1H", "4H", "1D"];
 
-export function ChartPanel({
-  symbol,
-  currentPrice = 2341.5,
-  className,
-}: ChartPanelProps) {
-  const [mode, setMode] = useState<"line" | "candle">("candle");
-  const [windowSecs, setWindowSecs] = useState(3600);
-  const [lineData, setLineData] = useState<LivelinePoint[]>([]);
-  const [candleData, setCandleData] = useState<CandlePoint[]>([]);
-  const [currentValue, setCurrentValue] = useState(currentPrice);
-  const [isClient, setIsClient] = useState(false);
-
-  const timeframes = [
-    { label: "1M", secs: 60 },
-    { label: "5M", secs: 300 },
-    { label: "15M", secs: 900 },
-    { label: "1H", secs: 3600 },
-    { label: "4H", secs: 14400 },
-    { label: "1D", secs: 86400 },
-  ];
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    const now = Date.now();
-    const points: LivelinePoint[] = [];
-    const candles: CandlePoint[] = [];
-    let price = currentPrice;
-
-    for (let i = 100; i >= 0; i--) {
-      const time = now - i * 60000;
-      const change = (Math.random() - 0.5) * 5;
-      price += change;
-
-      points.push({ time, value: price });
-
-      if (i % 5 === 0) {
-        const open = price;
-        const volatility = Math.random() * 10;
-        const close = open + (Math.random() - 0.5) * volatility;
-        const high = Math.max(open, close) + Math.random() * 5;
-        const low = Math.min(open, close) - Math.random() * 5;
-
-        candles.push({ time, open, high, low, close });
-      }
-    }
-
-    setLineData(points);
-    setCandleData(candles);
-    setCurrentValue(price);
-  }, [currentPrice, isClient]);
-
-  useEffect(() => {
-    if (!isClient || lineData.length === 0) return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const change = (Math.random() - 0.5) * 2;
-
-      setCurrentValue((prev) => {
-        const newValue = prev + change;
-
-        setLineData((prevData) => {
-          const newData = [...prevData.slice(-99), { time: now, value: newValue }];
-          return newData;
-        });
-
-        setCandleData((prevCandles) => {
-          if (prevCandles.length === 0) return prevCandles;
-          const newCandles = [...prevCandles];
-          const lastCandle = { ...newCandles[newCandles.length - 1] };
-          lastCandle.close = newValue;
-          lastCandle.high = Math.max(lastCandle.high, newValue);
-          lastCandle.low = Math.min(lastCandle.low, newValue);
-          newCandles[newCandles.length - 1] = lastCandle;
-          return newCandles;
-        });
-
-        return newValue;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isClient, lineData.length]);
-
-  const formatValue = (v: number) => `$${v.toFixed(2)}`;
+export function ChartPanel() {
+  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState("15m");
+  const [showAssetDropdown, setShowAssetDropdown] = useState(false);
 
   return (
-    <div className={cn("flex flex-col bg-[var(--bg-void)] min-h-0", className)}>
+    <div className="h-full flex flex-col bg-[var(--black)]">
       {/* Chart Header */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]">
-        {/* Left: Symbol & Price */}
-        <div className="flex items-center gap-4">
-          <span className="text-[var(--text-lg)] font-semibold text-white">
-            {symbol}
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="text-[var(--text-lg)] font-semibold tabular-nums text-[var(--color-long)]">
-              ${currentValue.toFixed(2)}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--gray-900)]">
+        {/* Asset Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setShowAssetDropdown(!showAssetDropdown)}
+            className="flex items-center gap-3 hover:bg-[var(--gray-900)] px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-[var(--yellow)] flex items-center justify-center">
+                <span className="text-black text-xs font-bold">
+                  {selectedAsset.symbol[0]}
+                </span>
+              </div>
+              <span className="font-semibold">{selectedAsset.symbol}/USD</span>
+            </div>
+            <svg
+              className="w-4 h-4 text-[var(--gray-500)]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          {showAssetDropdown && (
+            <div className="absolute top-full left-0 mt-1 w-48 bg-[var(--gray-900)] border border-[var(--gray-800)] rounded-lg shadow-xl z-50">
+              {assets.map((asset) => (
+                <button
+                  key={asset.symbol}
+                  onClick={() => {
+                    setSelectedAsset(asset);
+                    setShowAssetDropdown(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--gray-800)] transition-colors first:rounded-t-lg last:rounded-b-lg"
+                >
+                  <div className="w-6 h-6 rounded-full bg-[var(--yellow)] flex items-center justify-center">
+                    <span className="text-black text-xs font-bold">
+                      {asset.symbol[0]}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium">{asset.symbol}/USD</div>
+                    <div className="text-xs text-[var(--gray-500)]">{asset.name}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Price & Stats */}
+        <div className="flex items-center gap-6">
+          <div>
+            <span className="text-lg font-semibold tabular">
+              ${selectedAsset.price}
             </span>
-            <span className="text-[var(--text-xs)] text-[var(--color-long)]">
-              +1.24%
+            <span
+              className={`ml-2 text-sm ${
+                selectedAsset.change.startsWith("+")
+                  ? "text-[var(--green)]"
+                  : "text-[var(--red)]"
+              }`}
+            >
+              {selectedAsset.change}
             </span>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-6 text-xs">
+            <div>
+              <span className="text-[var(--gray-500)]">24h Vol</span>
+              <span className="ml-2 text-white tabular">$1.2B</span>
+            </div>
+            <div>
+              <span className="text-[var(--gray-500)]">Open Interest</span>
+              <span className="ml-2 text-white tabular">$458M</span>
+            </div>
+            <div>
+              <span className="text-[var(--gray-500)]">Funding</span>
+              <span className="ml-2 text-[var(--green)] tabular">+0.0125%</span>
+            </div>
           </div>
         </div>
 
-        {/* Right: Controls */}
-        <div className="flex items-center gap-4">
-          {/* Timeframe Selector */}
-          <div className="flex items-center gap-1">
-            {timeframes.map((tf) => (
-              <button
-                key={tf.secs}
-                onClick={() => setWindowSecs(tf.secs)}
-                className={cn(
-                  "px-2.5 py-1 rounded-md",
-                  "text-[var(--text-xs)] font-medium",
-                  "transition-all duration-150",
-                  windowSecs === tf.secs
-                    ? "text-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]"
-                    : "text-[var(--text-muted)] hover:text-white hover:bg-[var(--bg-hover)]"
-                )}
-              >
-                {tf.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-[var(--border-subtle)]" />
-
-          {/* Chart Type Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)]">
+        {/* Timeframe Selector */}
+        <div className="flex gap-1">
+          {timeframes.map((tf) => (
             <button
-              onClick={() => setMode("line")}
-              className={cn(
-                "px-3 py-1 rounded-md",
-                "text-[var(--text-xs)] font-medium",
-                "transition-all duration-150",
-                mode === "line"
-                  ? "bg-[var(--bg-elevated)] text-white"
-                  : "text-[var(--text-muted)] hover:text-white"
-              )}
+              key={tf}
+              onClick={() => setSelectedTimeframe(tf)}
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                selectedTimeframe === tf
+                  ? "bg-[var(--gray-800)] text-white"
+                  : "text-[var(--gray-500)] hover:text-white"
+              }`}
             >
-              Line
+              {tf}
             </button>
-            <button
-              onClick={() => setMode("candle")}
-              className={cn(
-                "px-3 py-1 rounded-md",
-                "text-[var(--text-xs)] font-medium",
-                "transition-all duration-150",
-                mode === "candle"
-                  ? "bg-[var(--bg-elevated)] text-white"
-                  : "text-[var(--text-muted)] hover:text-white"
-              )}
-            >
-              Candles
-            </button>
-          </div>
-
-          {/* Fullscreen */}
-          <button
-            className={cn(
-              "p-2 rounded-md",
-              "text-[var(--text-muted)]",
-              "hover:text-white hover:bg-[var(--bg-hover)]",
-              "transition-colors duration-150"
-            )}
-            aria-label="Fullscreen"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-          </button>
+          ))}
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="flex-1 relative min-h-0">
-        {isClient && lineData.length > 0 ? (
-          <Liveline
-            data={lineData}
-            value={currentValue}
-            theme="dark"
-            color="#f5c451"
-            window={windowSecs}
-            grid={true}
-            badge={true}
-            momentum={true}
-            fill={true}
-            scrub={true}
-            showValue={true}
-            valueMomentumColor={true}
-            formatValue={formatValue}
-            mode={mode}
-            candles={mode === "candle" ? candleData : undefined}
-            candleWidth={8}
-            liveCandle={mode === "candle" ? candleData[candleData.length - 1] : undefined}
-            referenceLine={{
-              value: currentPrice,
-              label: "Entry",
-            }}
-            padding={{
-              top: 24,
-              right: 70,
-              bottom: 32,
-              left: 12,
-            }}
-            className="w-full h-full"
-            style={{ background: "var(--bg-void)" }}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-void)]">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-              <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
-                Loading Chart
-              </span>
-            </div>
+      {/* Chart Area */}
+      <div className="flex-1 flex items-center justify-center bg-[var(--gray-950)]">
+        <div className="text-center">
+          <div className="text-[var(--gray-600)] text-sm mb-2">
+            TradingView Chart
           </div>
-        )}
+          <div className="text-[var(--gray-700)] text-xs">
+            Connect TradingView widget here
+          </div>
+        </div>
       </div>
     </div>
   );
