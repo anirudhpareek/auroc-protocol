@@ -120,11 +120,11 @@ export function ChartPanel({
   const formatValue = (v: number) => `$${v.toFixed(2)}`;
 
   return (
-    <div className={cn("h-full flex flex-col bg-[var(--bg-void)]", className)}>
+    <div className={cn("flex flex-col bg-[var(--bg-void)] min-h-0", className)}>
       {/* Chart Controls */}
       <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* Left: Timeframe Selector */}
-        <div className="flex items-center gap-0">
+        <div className="flex items-center gap-0.5">
           {timeframes.map((tf) => (
             <button
               key={tf.secs}

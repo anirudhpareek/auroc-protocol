@@ -131,7 +131,7 @@ export function LeverageSlider({
   onChange,
   maxLeverage = 10,
 }: LeverageSliderProps) {
-  const marks = [1, Math.floor(maxLeverage / 4), Math.floor(maxLeverage / 2), Math.floor(maxLeverage * 3 / 4), maxLeverage];
+  const marks = [1, Math.round(maxLeverage / 3), Math.round(maxLeverage * 2 / 3), maxLeverage];
 
   const getRiskLevel = () => {
     const ratio = value / maxLeverage;
@@ -151,7 +151,7 @@ export function LeverageSlider({
         max={maxLeverage}
         step={0.1}
         label="Leverage"
-        formatValue={(v) => `${v.toFixed(1)}x`}
+        formatValue={(v) => `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}x`}
         marks={marks}
       />
       <div className="flex items-center justify-between">
