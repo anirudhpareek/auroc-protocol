@@ -14,7 +14,7 @@ export { Badge, RegimeBadge, PnLBadge, type BadgeVariant, type RegimeType } from
 export { Card, CardHeader, CardContent, StatCard } from "./card";
 
 // Tabs
-export { Tabs, TabsList, TabsTrigger, TabsContent, LongShortTabs } from "./tabs";
+export { Tabs, TabsList, TabsTrigger, TabsContent, LongShortTabs, OrderTypeTabs } from "./tabs";
 
 // Table
 export {

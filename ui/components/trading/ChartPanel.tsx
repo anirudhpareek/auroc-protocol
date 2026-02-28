@@ -11,14 +11,14 @@ const Liveline = dynamic(
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-[var(--bg-void)]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
             Loading Chart
           </span>
         </div>
       </div>
-    )
+    ),
   }
 );
 
@@ -33,7 +33,7 @@ export function ChartPanel({
   currentPrice = 2341.5,
   className,
 }: ChartPanelProps) {
-  const [mode, setMode] = useState<"line" | "candle">("line");
+  const [mode, setMode] = useState<"line" | "candle">("candle");
   const [windowSecs, setWindowSecs] = useState(3600);
   const [lineData, setLineData] = useState<LivelinePoint[]>([]);
   const [candleData, setCandleData] = useState<CandlePoint[]>([]);
@@ -121,40 +121,59 @@ export function ChartPanel({
 
   return (
     <div className={cn("flex flex-col bg-[var(--bg-void)] min-h-0", className)}>
-      {/* Chart Controls */}
-      <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-        {/* Left: Timeframe Selector */}
-        <div className="flex items-center gap-0.5">
-          {timeframes.map((tf) => (
-            <button
-              key={tf.secs}
-              onClick={() => setWindowSecs(tf.secs)}
-              className={cn(
-                "px-2 py-1 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold",
-                "transition-colors duration-[var(--transition-fast)]",
-                windowSecs === tf.secs
-                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-              )}
-            >
-              {tf.label}
-            </button>
-          ))}
+      {/* Chart Header */}
+      <div className="h-12 flex items-center justify-between px-4 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]">
+        {/* Left: Symbol & Price */}
+        <div className="flex items-center gap-4">
+          <span className="text-[var(--text-lg)] font-semibold text-white">
+            {symbol}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[var(--text-lg)] font-semibold tabular-nums text-[var(--color-long)]">
+              ${currentValue.toFixed(2)}
+            </span>
+            <span className="text-[var(--text-xs)] text-[var(--color-long)]">
+              +1.24%
+            </span>
+          </div>
         </div>
 
-        {/* Right: Chart Type */}
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-0 p-0.5 bg-[var(--bg-void)] rounded-[var(--radius-sm)] border border-[var(--border-subtle)]">
+        {/* Right: Controls */}
+        <div className="flex items-center gap-4">
+          {/* Timeframe Selector */}
+          <div className="flex items-center gap-1">
+            {timeframes.map((tf) => (
+              <button
+                key={tf.secs}
+                onClick={() => setWindowSecs(tf.secs)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md",
+                  "text-[var(--text-xs)] font-medium",
+                  "transition-all duration-150",
+                  windowSecs === tf.secs
+                    ? "text-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]"
+                    : "text-[var(--text-muted)] hover:text-white hover:bg-[var(--bg-hover)]"
+                )}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-[var(--border-subtle)]" />
+
+          {/* Chart Type Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)]">
             <button
               onClick={() => setMode("line")}
               className={cn(
-                "px-2 py-0.5 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold",
-                "transition-colors duration-[var(--transition-fast)]",
+                "px-3 py-1 rounded-md",
+                "text-[var(--text-xs)] font-medium",
+                "transition-all duration-150",
                 mode === "line"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  ? "bg-[var(--bg-elevated)] text-white"
+                  : "text-[var(--text-muted)] hover:text-white"
               )}
             >
               Line
@@ -162,52 +181,43 @@ export function ChartPanel({
             <button
               onClick={() => setMode("candle")}
               className={cn(
-                "px-2 py-0.5 rounded-[var(--radius-sm)]",
-                "text-[var(--text-2xs)] font-semibold",
-                "transition-colors duration-[var(--transition-fast)]",
+                "px-3 py-1 rounded-md",
+                "text-[var(--text-xs)] font-medium",
+                "transition-all duration-150",
                 mode === "candle"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  ? "bg-[var(--bg-elevated)] text-white"
+                  : "text-[var(--text-muted)] hover:text-white"
               )}
             >
               Candles
             </button>
           </div>
 
+          {/* Fullscreen */}
           <button
             className={cn(
-              "p-1.5 rounded-[var(--radius-sm)]",
+              "p-2 rounded-md",
               "text-[var(--text-muted)]",
-              "hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]",
-              "transition-colors duration-[var(--transition-fast)]"
+              "hover:text-white hover:bg-[var(--bg-hover)]",
+              "transition-colors duration-150"
             )}
-            aria-label="Expand chart"
+            aria-label="Fullscreen"
           >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-              />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Chart Container */}
+      {/* Chart */}
       <div className="flex-1 relative min-h-0">
         {isClient && lineData.length > 0 ? (
           <Liveline
             data={lineData}
             value={currentValue}
             theme="dark"
-            color="#00d4aa"
+            color="#f5c451"
             window={windowSecs}
             grid={true}
             badge={true}
@@ -236,9 +246,9 @@ export function ChartPanel({
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-void)]">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-              <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+              <span className="text-[var(--text-xs)] text-[var(--text-muted)]">
                 Loading Chart
               </span>
             </div>

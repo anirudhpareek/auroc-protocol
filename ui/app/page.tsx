@@ -4,8 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { TradingLayout, MobileLayout } from "@/components/layout";
 import {
-  MarketSelector,
-  MarketInfo,
   ChartPanel,
   TradePanel,
   PositionsPanel,
@@ -14,7 +12,7 @@ import { useAllMarkets } from "@/hooks/useMarketData";
 import { usePositions } from "@/hooks/usePositions";
 import { type RegimeType } from "@/components/ui";
 
-// Mock data for demo - will be replaced with real contract data
+// Mock data for demo
 const mockMarkets = [
   {
     id: "xau-usd",
@@ -36,7 +34,6 @@ const mockMarkets = [
   },
 ];
 
-// Hook to detect mobile
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -59,13 +56,8 @@ export default function TradePage() {
   const [selectedMarketId, setSelectedMarketId] = useState("xau-usd");
   const [mobileTab, setMobileTab] = useState<"chart" | "trade" | "positions">("chart");
 
-  // Fetch market data
   const { markets: contractMarkets, isLoading: marketsLoading } = useAllMarkets();
-
-  // Fetch positions
-  const { positions: rawPositions, isLoading: positionsLoading } = usePositions(
-    address
-  );
+  const { positions: rawPositions, isLoading: positionsLoading } = usePositions(address);
 
   // Merge mock data with contract data
   const markets = useMemo(() => {
@@ -130,12 +122,10 @@ export default function TradePage() {
     leverage: number;
   }) => {
     console.log("Submitting order:", order);
-    // TODO: Implement order submission
   };
 
   const handleClosePosition = async (positionId: string) => {
     console.log("Closing position:", positionId);
-    // TODO: Implement position closing
   };
 
   // Mobile content renderer
@@ -143,26 +133,17 @@ export default function TradePage() {
     switch (mobileTab) {
       case "chart":
         return (
-          <div className="h-full flex flex-col">
-            <MarketInfo
-              market={selectedMarket}
-              markPrice={selectedMarket?.price?.toString()}
-              indexPrice={selectedMarket?.price?.toString()}
-              fundingRate="0.0100"
-              nextFunding="00:42:15"
-            />
-            <ChartPanel
-              symbol={selectedMarket?.symbol || "XAU/USD"}
-              className="flex-1"
-            />
-          </div>
+          <ChartPanel
+            symbol={selectedMarket?.symbol || "XAU/USD"}
+            className="h-full"
+          />
         );
       case "trade":
         return (
           <TradePanel
             marketSymbol={selectedMarket?.symbol || "XAU/USD"}
             markPrice={selectedMarket?.price?.toString().replace(/,/g, "") || "0"}
-            maxLeverage={10}
+            maxLeverage={100}
             onSubmitOrder={handleSubmitOrder}
           />
         );
@@ -182,10 +163,7 @@ export default function TradePage() {
   // Render mobile layout
   if (isMobile) {
     return (
-      <MobileLayout
-        activeTab={mobileTab}
-        onTabChange={setMobileTab}
-      >
+      <MobileLayout activeTab={mobileTab} onTabChange={setMobileTab}>
         {renderMobileContent()}
       </MobileLayout>
     );
@@ -194,28 +172,11 @@ export default function TradePage() {
   // Render desktop layout
   return (
     <TradingLayout
-      leftPanel={
-        <MarketSelector
-          markets={markets}
-          selectedMarket={selectedMarketId}
-          onSelectMarket={setSelectedMarketId}
-          isLoading={marketsLoading}
-        />
-      }
       centerTop={
-        <div className="h-full flex flex-col">
-          <MarketInfo
-            market={selectedMarket}
-            markPrice={selectedMarket?.price?.toString()}
-            indexPrice={selectedMarket?.price?.toString()}
-            fundingRate="0.0100"
-            nextFunding="00:42:15"
-          />
-          <ChartPanel
-            symbol={selectedMarket?.symbol || "XAU/USD"}
-            className="flex-1"
-          />
-        </div>
+        <ChartPanel
+          symbol={selectedMarket?.symbol || "XAU/USD"}
+          className="h-full"
+        />
       }
       centerBottom={
         <PositionsPanel
@@ -230,7 +191,7 @@ export default function TradePage() {
         <TradePanel
           marketSymbol={selectedMarket?.symbol || "XAU/USD"}
           markPrice={selectedMarket?.price?.toString().replace(/,/g, "") || "0"}
-          maxLeverage={10}
+          maxLeverage={100}
           onSubmitOrder={handleSubmitOrder}
         />
       }

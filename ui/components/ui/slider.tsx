@@ -39,12 +39,12 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
         {(label || showValue) && (
           <div className="flex items-center justify-between">
             {label && (
-              <span className="text-[var(--text-2xs)] text-[var(--text-muted)] uppercase tracking-widest font-medium">
+              <span className="text-[var(--text-sm)] text-[var(--text-secondary)]">
                 {label}
               </span>
             )}
             {showValue && (
-              <span className="text-[var(--text-sm)] font-bold tabular-nums text-[var(--accent-primary)]">
+              <span className="text-[var(--text-sm)] font-semibold tabular-nums text-white">
                 {formatValue(value)}
               </span>
             )}
@@ -61,33 +61,33 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
             value={value}
             onChange={(e) => onChange(parseFloat(e.target.value))}
             className={cn(
-              "w-full h-1.5 appearance-none cursor-pointer",
-              "bg-[var(--bg-void)] rounded-full",
-              "border border-[var(--border-subtle)]",
+              "w-full h-2 appearance-none cursor-pointer",
+              "bg-[var(--bg-surface)] rounded-full",
               "focus:outline-none",
               "[&::-webkit-slider-thumb]:appearance-none",
-              "[&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5",
+              "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4",
               "[&::-webkit-slider-thumb]:rounded-full",
-              "[&::-webkit-slider-thumb]:bg-[var(--accent-primary)]",
+              "[&::-webkit-slider-thumb]:bg-white",
               "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--bg-void)]",
               "[&::-webkit-slider-thumb]:cursor-pointer",
+              "[&::-webkit-slider-thumb]:shadow-md",
               "[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-150",
               "[&::-webkit-slider-thumb]:hover:scale-110",
               "[&::-moz-range-thumb]:appearance-none",
-              "[&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5",
+              "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4",
               "[&::-moz-range-thumb]:rounded-full",
-              "[&::-moz-range-thumb]:bg-[var(--accent-primary)]",
+              "[&::-moz-range-thumb]:bg-white",
               "[&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--bg-void)]",
               "[&::-moz-range-thumb]:cursor-pointer"
             )}
             style={{
-              background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, var(--bg-void) ${percentage}%, var(--bg-void) 100%)`,
+              background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percentage}%, var(--bg-surface) ${percentage}%, var(--bg-surface) 100%)`,
             }}
             {...props}
           />
 
           {marks && (
-            <div className="relative h-5 mt-1.5">
+            <div className="relative h-6 mt-2">
               {marks.map((mark) => {
                 const markPercent = ((mark - min) / (max - min)) * 100;
                 const isActive = value >= mark;
@@ -98,11 +98,11 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
                     onClick={() => onChange(mark)}
                     className={cn(
                       "absolute -translate-x-1/2",
-                      "text-[var(--text-2xs)] tabular-nums font-semibold",
+                      "text-[var(--text-xs)] tabular-nums font-medium",
                       "transition-colors duration-150",
                       isActive
                         ? "text-[var(--accent-primary)]"
-                        : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                        : "text-[var(--text-muted)] hover:text-white"
                     )}
                     style={{ left: `${markPercent}%` }}
                   >
@@ -129,43 +129,111 @@ interface LeverageSliderProps {
 export function LeverageSlider({
   value,
   onChange,
-  maxLeverage = 10,
+  maxLeverage = 100,
 }: LeverageSliderProps) {
-  const marks = [1, Math.round(maxLeverage / 3), Math.round(maxLeverage * 2 / 3), maxLeverage];
+  const marks = [1, 25, 50, 75, 100].filter(m => m <= maxLeverage);
 
-  const getRiskLevel = () => {
-    const ratio = value / maxLeverage;
-    if (ratio < 0.4) return "low";
-    if (ratio < 0.7) return "medium";
-    return "high";
+  const handleIncrement = () => {
+    const newValue = Math.min(value + 1, maxLeverage);
+    onChange(newValue);
   };
 
-  const riskLevel = getRiskLevel();
+  const handleDecrement = () => {
+    const newValue = Math.max(value - 1, 1);
+    onChange(newValue);
+  };
 
   return (
-    <div className="space-y-2">
-      <Slider
-        value={value}
-        onChange={onChange}
-        min={1}
-        max={maxLeverage}
-        step={0.1}
-        label="Leverage"
-        formatValue={(v) => `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}x`}
-        marks={marks}
-      />
+    <div className="space-y-3">
+      {/* Header with controls */}
       <div className="flex items-center justify-between">
-        <span className="text-[var(--text-2xs)] text-[var(--text-muted)]">
-          Risk Level
+        <span className="text-[var(--text-sm)] text-[var(--text-secondary)]">
+          Leverage
         </span>
-        <span className={cn(
-          "text-[var(--text-2xs)] font-semibold uppercase tracking-wider",
-          riskLevel === "low" && "text-[var(--color-long)]",
-          riskLevel === "medium" && "text-[var(--color-warning)]",
-          riskLevel === "high" && "text-[var(--color-short)]"
-        )}>
-          {riskLevel}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            className="w-7 h-7 flex items-center justify-center rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-white transition-colors"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </button>
+          <div className="min-w-[48px] text-center">
+            <span className="text-[var(--text-md)] font-semibold tabular-nums text-white">
+              {value}x
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleIncrement}
+            className="w-7 h-7 flex items-center justify-center rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-white transition-colors"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Slider */}
+      <div className="relative">
+        <input
+          type="range"
+          min={1}
+          max={maxLeverage}
+          step={1}
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value))}
+          className={cn(
+            "w-full h-2 appearance-none cursor-pointer",
+            "bg-[var(--bg-surface)] rounded-full",
+            "focus:outline-none",
+            "[&::-webkit-slider-thumb]:appearance-none",
+            "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4",
+            "[&::-webkit-slider-thumb]:rounded-full",
+            "[&::-webkit-slider-thumb]:bg-white",
+            "[&::-webkit-slider-thumb]:shadow-md",
+            "[&::-webkit-slider-thumb]:cursor-pointer",
+            "[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-150",
+            "[&::-webkit-slider-thumb]:hover:scale-110",
+            "[&::-moz-range-thumb]:appearance-none",
+            "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4",
+            "[&::-moz-range-thumb]:rounded-full",
+            "[&::-moz-range-thumb]:bg-white",
+            "[&::-moz-range-thumb]:cursor-pointer"
+          )}
+          style={{
+            background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${((value - 1) / (maxLeverage - 1)) * 100}%, var(--bg-surface) ${((value - 1) / (maxLeverage - 1)) * 100}%, var(--bg-surface) 100%)`,
+          }}
+        />
+
+        {/* Marks */}
+        <div className="relative h-6 mt-2">
+          {marks.map((mark) => {
+            const markPercent = ((mark - 1) / (maxLeverage - 1)) * 100;
+            const isActive = value >= mark;
+            return (
+              <button
+                key={mark}
+                type="button"
+                onClick={() => onChange(mark)}
+                className={cn(
+                  "absolute -translate-x-1/2",
+                  "text-[var(--text-xs)] tabular-nums font-medium",
+                  "transition-colors duration-150",
+                  isActive
+                    ? "text-[var(--accent-primary)]"
+                    : "text-[var(--text-muted)] hover:text-white"
+                )}
+                style={{ left: `${markPercent}%` }}
+              >
+                {mark}x
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

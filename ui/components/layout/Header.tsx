@@ -6,7 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { cn } from "@/lib/cn";
 
 const navItems = [
-  { label: "Trade", href: "/" },
+  { label: "Perps", href: "/", active: true },
   { label: "Portfolio", href: "/portfolio" },
   { label: "Vault", href: "/vault" },
 ];
@@ -15,20 +15,20 @@ export function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="h-12 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] sticky top-0 z-[var(--z-sticky)]">
+    <header className="h-14 border-b border-[var(--border-subtle)] bg-[var(--bg-void)] sticky top-0 z-[var(--z-sticky)]">
       <div className="h-full px-4 flex items-center justify-between">
-        {/* Logo & Nav */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-[var(--accent-primary)] flex items-center justify-center">
-              <span className="text-[var(--bg-void)] font-bold text-sm tracking-tight">A</span>
+        {/* Left: Logo & Nav */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center">
+              <span className="text-black font-bold text-lg">A</span>
             </div>
-            <span className="font-semibold text-[var(--text-sm)] text-[var(--text-primary)] tracking-tight">
+            <span className="font-semibold text-[var(--text-lg)] text-white tracking-tight hidden sm:block">
               Auroc
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center">
+          <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -36,12 +36,12 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "px-3 py-1.5 rounded-[var(--radius-sm)]",
+                    "px-4 py-2 rounded-lg",
                     "text-[var(--text-sm)] font-medium",
-                    "transition-colors duration-[var(--transition-fast)]",
+                    "transition-all duration-[var(--transition-fast)]",
                     isActive
-                      ? "text-[var(--text-primary)]"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                      ? "text-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]"
+                      : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-hover)]"
                   )}
                 >
                   {item.label}
@@ -51,13 +51,13 @@ export function Header() {
           </nav>
         </div>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-2">
+        {/* Right: Network & Wallet */}
+        <div className="flex items-center gap-3">
           {/* Network Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] bg-[var(--color-warning-subtle)] border border-[var(--color-warning-glow)]">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning)] animate-pulse-dot" />
-            <span className="text-[var(--text-2xs)] text-[var(--color-warning)] font-medium">
-              Testnet
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)]">
+            <div className="live-dot" />
+            <span className="text-[var(--text-xs)] text-[var(--text-secondary)] font-medium">
+              Arbitrum Sepolia
             </span>
           </div>
 
@@ -91,16 +91,16 @@ export function Header() {
                         <button
                           onClick={openConnectModal}
                           className={cn(
-                            "h-8 px-4",
-                            "text-[var(--text-xs)] font-semibold",
-                            "bg-[var(--accent-primary)] text-[var(--bg-void)]",
-                            "rounded-[var(--radius-md)]",
+                            "h-9 px-5",
+                            "text-[var(--text-sm)] font-semibold",
+                            "bg-[var(--accent-primary)] text-black",
+                            "rounded-lg",
                             "transition-all duration-[var(--transition-fast)]",
                             "hover:brightness-110",
                             "active:scale-[0.98]"
                           )}
                         >
-                          Connect
+                          Connect Wallet
                         </button>
                       );
                     }
@@ -110,10 +110,10 @@ export function Header() {
                         <button
                           onClick={openChainModal}
                           className={cn(
-                            "h-8 px-4",
-                            "text-[var(--text-xs)] font-semibold text-white",
+                            "h-9 px-5",
+                            "text-[var(--text-sm)] font-semibold text-white",
                             "bg-[var(--color-short)]",
-                            "rounded-[var(--radius-md)]"
+                            "rounded-lg"
                           )}
                         >
                           Wrong Network
@@ -122,22 +122,33 @@ export function Header() {
                     }
 
                     return (
-                      <button
-                        onClick={openAccountModal}
-                        className={cn(
-                          "h-8 px-3",
-                          "flex items-center gap-2",
-                          "bg-[var(--bg-elevated)] hover:bg-[var(--bg-hover)]",
-                          "border border-[var(--border-default)]",
-                          "rounded-[var(--radius-md)]",
-                          "transition-colors duration-[var(--transition-fast)]"
-                        )}
-                      >
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--color-long)]" />
-                        <span className="text-[var(--text-xs)] font-medium text-[var(--text-primary)] tabular-nums">
-                          {account.displayName}
-                        </span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Balance */}
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)]">
+                          <span className="text-[var(--text-sm)] text-[var(--text-muted)]">Balance</span>
+                          <span className="text-[var(--text-sm)] text-white font-medium tabular-nums">
+                            $0.00
+                          </span>
+                        </div>
+
+                        {/* Account */}
+                        <button
+                          onClick={openAccountModal}
+                          className={cn(
+                            "h-9 px-4",
+                            "flex items-center gap-2",
+                            "bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)]",
+                            "border border-[var(--border-default)]",
+                            "rounded-lg",
+                            "transition-colors duration-[var(--transition-fast)]"
+                          )}
+                        >
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--color-long)]" />
+                          <span className="text-[var(--text-sm)] font-medium text-white tabular-nums">
+                            {account.displayName}
+                          </span>
+                        </button>
+                      </div>
                     );
                   })()}
                 </div>
