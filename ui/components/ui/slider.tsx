@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-
 interface SliderProps {
   value: number;
   onChange: (value: number) => void;
@@ -17,38 +15,56 @@ export function Slider({
   max = 100,
   marks = [0, 25, 50, 75, 100],
 }: SliderProps) {
-  const percent = ((value - min) / (max - min)) * 100;
+  const pct = ((value - min) / (max - min)) * 100;
 
   return (
-    <div className="space-y-2">
-      <div className="relative h-1.5">
-        <div className="absolute inset-0 bg-[var(--gray-800)] rounded-full" />
-        <div
-          className="absolute left-0 top-0 h-full bg-[var(--yellow)] rounded-full"
-          style={{ width: `${percent}%` }}
-        />
+    <div className="space-y-2.5">
+      <div className="relative h-4 flex items-center">
+        {/* Track */}
+        <div className="absolute w-full h-[3px] rounded-full overflow-hidden" style={{ background: "var(--bg-overlay)" }}>
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${pct}%`,
+              background: "linear-gradient(to right, rgba(245,166,35,0.3), var(--accent))",
+            }}
+          />
+        </div>
+
+        {/* Native range for interaction */}
         <input
           type="range"
           min={min}
           max={max}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-0 w-full opacity-0 cursor-pointer"
+          className="absolute w-full opacity-0 cursor-pointer"
+          style={{ height: "16px", zIndex: 2 }}
         />
+
+        {/* Thumb */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md pointer-events-none"
-          style={{ left: `calc(${percent}% - 6px)` }}
+          className="absolute pointer-events-none"
+          style={{
+            left: `calc(${pct}% - 7px)`,
+            width: "14px",
+            height: "14px",
+            borderRadius: "50%",
+            background: "var(--text-primary)",
+            boxShadow: "0 0 0 2px var(--bg-base), 0 0 10px var(--accent-glow)",
+            zIndex: 1,
+          }}
         />
       </div>
+
+      {/* Mark labels */}
       <div className="flex justify-between">
         {marks.map((mark) => (
           <button
             key={mark}
             onClick={() => onChange(mark)}
-            className={cn(
-              "text-xs transition-colors",
-              value >= mark ? "text-[var(--yellow)]" : "text-[var(--gray-600)]"
-            )}
+            className="text-[10px] font-semibold transition-colors"
+            style={{ color: value >= mark ? "var(--accent)" : "var(--text-muted)" }}
           >
             {mark}
           </button>

@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Auroc Protocol",
-  description: "24/7 perpetual futures for Real World Assets on Arbitrum",
+  title: "Auroc Protocol — 24/7 RWA Perpetuals",
+  description: "Trade gold and equity perpetuals 24/7 with confidence-aware risk controls on Arbitrum",
   icons: {
     icon: "/favicon.ico",
   },

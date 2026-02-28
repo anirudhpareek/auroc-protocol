@@ -30,17 +30,21 @@ export function Input({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
-            "w-full bg-[var(--gray-900)] border border-[var(--gray-800)]",
-            "rounded-lg px-3 py-2.5 text-white text-sm",
-            "focus:outline-none focus:border-[var(--gray-600)]",
-            "placeholder:text-[var(--gray-600)]",
+            "w-full rounded-xl px-3 py-2.5 text-sm tabular",
+            "focus:outline-none transition-all duration-150",
+            "placeholder:text-[var(--text-muted)]",
             suffix && "pr-16",
             className
           )}
+          style={{
+            background: "var(--bg-elevated)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--border-default)",
+          }}
           {...props}
         />
         {suffix && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--gray-400)]">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-tertiary)" }}>
             {suffix}
           </div>
         )}
