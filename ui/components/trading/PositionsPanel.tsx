@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { cn } from "@/lib/cn";
 import { CONTRACTS, PerpEngineAbi } from "@/lib/contracts";
 import { usePositions } from "@/hooks/usePositions";
 import { formatPrice, formatPnl, formatUsdc, formatLeverage } from "@/lib/format";
 
-/* ── Tabs ── */
-const TABS = ["Positions", "Orders", "History"] as const;
+const TABS = ["Positions", "Active Orders", "Trade History"] as const;
 type Tab = (typeof TABS)[number];
 
-/* ── Decode marketId bytes32 → readable string ── */
 function formatMarketId(id: `0x${string}`): string {
   try {
     const hex = id.replace("0x", "").replace(/00+$/, "");
@@ -21,28 +18,19 @@ function formatMarketId(id: `0x${string}`): string {
   }
 }
 
-/* ── Close Position Button ── */
 function CloseBtn({ positionId }: { positionId: `0x${string}` }) {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: confirming } = useWaitForTransactionReceipt({ hash });
   const busy = isPending || confirming;
-
   return (
     <button
-      onClick={() =>
-        writeContract({
-          address: CONTRACTS.perpEngine,
-          abi: PerpEngineAbi,
-          functionName: "closePosition",
-          args: [positionId],
-        })
-      }
+      onClick={() => writeContract({ address: CONTRACTS.perpEngine, abi: PerpEngineAbi, functionName: "closePosition", args: [positionId] })}
       disabled={busy}
-      className="text-xs font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95 disabled:opacity-40"
       style={{
-        background: "var(--short-dim)",
-        color: "var(--short)",
-        border: "1px solid var(--short-mid)",
+        padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
+        background: "rgba(239,68,68,0.10)", color: "var(--short)",
+        border: "1px solid rgba(239,68,68,0.16)", cursor: busy ? "not-allowed" : "pointer",
+        opacity: busy ? 0.4 : 1, transition: "all 0.1s",
       }}
     >
       {busy ? "…" : "Close"}
@@ -50,7 +38,6 @@ function CloseBtn({ positionId }: { positionId: `0x${string}` }) {
   );
 }
 
-/* ── Position Row (real data) ── */
 interface PosEntry {
   id: `0x${string}`;
   size: bigint;
@@ -62,136 +49,86 @@ interface PosEntry {
   position?: { marketId?: `0x${string}` };
 }
 
+const TH: React.CSSProperties = {
+  padding: "0 12px", fontSize: 10, fontWeight: 500, color: "var(--t3)",
+  textAlign: "left", letterSpacing: "0.04em", textTransform: "uppercase",
+  whiteSpace: "nowrap",
+};
+const TD: React.CSSProperties = {
+  padding: "0 12px", fontSize: 11, color: "var(--t2)",
+  fontFamily: "JetBrains Mono, monospace", whiteSpace: "nowrap",
+};
+
 function PositionRow({ pos }: { pos: PosEntry }) {
   const { str: pnlStr, isPositive } = formatPnl(pos.unrealizedPnL);
-  const rawSize   = pos.size < 0n ? -pos.size : pos.size;
-  const liqRisk   = Number(pos.marginRatio) / 1e18 < 0.1;
-  const market    = pos.position?.marketId ? formatMarketId(pos.position.marketId) : "—";
+  const rawSize = pos.size < 0n ? -pos.size : pos.size;
+  const market = pos.position?.marketId ? formatMarketId(pos.position.marketId) : "—";
+  const [hovered, setHovered] = useState(false);
 
   return (
     <tr
-      className="transition-colors cursor-default"
-      style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = "var(--bg-elevated)"}
-      onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ background: hovered ? "var(--hover)" : "transparent", transition: "background 0.1s", cursor: "default" }}
     >
-      {/* Market + direction */}
-      <td className="px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
-            style={
-              pos.isLong
-                ? { background: "var(--long-dim)", color: "var(--long)" }
-                : { background: "var(--short-dim)", color: "var(--short)" }
-            }
-          >
+      <td style={{ ...TD, paddingLeft: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
+            background: pos.isLong ? "var(--long-dim)" : "var(--short-dim)",
+            color: pos.isLong ? "var(--long)" : "var(--short)",
+          }}>
             {pos.isLong ? "LONG" : "SHORT"}
           </span>
-          <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{market}</span>
-          <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-            {formatLeverage(pos.size, pos.margin)}
-          </span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "Inter, sans-serif" }}>{market}</span>
+          <span style={{ fontSize: 10, color: "var(--t3)" }}>{formatLeverage(pos.size, pos.margin)}</span>
         </div>
       </td>
-
-      {/* Size */}
-      <td className="px-4 py-2.5 text-xs tabular" style={{ color: "var(--text-secondary)" }}>
-        ${formatUsdc(rawSize)}
-      </td>
-
-      {/* Entry */}
-      <td className="px-4 py-2.5 text-right text-xs tabular" style={{ color: "var(--text-secondary)" }}>
-        ${formatPrice(pos.entryPrice)}
-      </td>
-
-      {/* PnL */}
-      <td className="px-4 py-2.5 text-right">
-        <span className="text-xs font-bold tabular"
-          style={{ color: isPositive ? "var(--long)" : "var(--short)" }}>
-          {pnlStr}
-        </span>
-      </td>
-
-      {/* Margin */}
-      <td className="px-4 py-2.5 text-right">
-        <div className="flex items-center justify-end gap-1.5">
-          {liqRisk && (
-            <span className="text-[9px] font-bold px-1 py-0.5 rounded-md"
-              style={{ background: "var(--short-dim)", color: "var(--short)", border: "1px solid var(--short-mid)" }}>
-              LIQ RISK
-            </span>
-          )}
-          <span className="text-xs tabular" style={{ color: "var(--text-secondary)" }}>
-            ${formatUsdc(pos.margin)}
-          </span>
-        </div>
-      </td>
-
-      {/* Actions */}
-      <td className="px-4 py-2.5 text-right">
+      <td style={TD}>${formatUsdc(rawSize)}</td>
+      <td style={{ ...TD, color: "var(--t2)" }}>${formatUsdc(rawSize)}</td>
+      <td style={TD}>${formatPrice(pos.entryPrice)}</td>
+      <td style={{ ...TD, color: "var(--t2)" }}>—</td>
+      <td style={{ ...TD, color: isPositive ? "var(--long)" : "var(--short)", fontWeight: 600 }}>{pnlStr}</td>
+      <td style={{ ...TD, color: "var(--t3)" }}>—</td>
+      <td style={TD}>${formatUsdc(pos.margin)}</td>
+      <td style={{ ...TD, paddingRight: 16 }}>
         <CloseBtn positionId={pos.id} />
       </td>
     </tr>
   );
 }
 
-/* ── Empty state ── */
-function Empty({ icon, msg, sub }: { icon: string; msg: string; sub?: string }) {
-  return (
-    <div className="h-full flex flex-col items-center justify-center gap-2 py-8">
-      <div className="text-xl opacity-20">{icon}</div>
-      <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{msg}</p>
-      {sub && <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sub}</p>}
-    </div>
-  );
-}
+const TABLE_HEADERS = ["Symbol", "Size", "Position Value", "Entry Price", "Mark Price", "PnL", "Liq. Price", "Margin", "Close"];
 
-/* ── Aggregate PnL ── */
-function TotalPnl({ positions }: { positions: PosEntry[] }) {
-  if (!positions.length) return null;
-  const total = positions.reduce((a, p) => a + p.unrealizedPnL, 0n);
-  const { str, isPositive } = formatPnl(total);
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Total PnL</span>
-      <span className="text-xs font-bold tabular"
-        style={{ color: isPositive ? "var(--long)" : "var(--short)" }}>
-        {str}
-      </span>
-    </div>
-  );
-}
-
-/* ── Main ── */
 export function PositionsPanel() {
   const { address } = useAccount();
   const [tab, setTab] = useState<Tab>("Positions");
   const { positions, isLoading } = usePositions();
 
-  const TABLE_HEADERS = ["Market", "Size", "Entry", "Unrealized PnL", "Margin", ""];
-
   return (
-    <div className="h-full flex flex-col" style={{ background: "var(--bg-base)" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--surface)", overflow: "hidden" }}>
 
-      {/* Tab bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2"
-        style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)" }}>
-        <div className="flex gap-0.5">
+      {/* ── Tab bar ── */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        borderBottom: "1px solid var(--b1)", flexShrink: 0, padding: "0 4px",
+        height: 36,
+      }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           {TABS.map((t) => {
             const active = t === tab;
             return (
               <button key={t} onClick={() => setTab(t)}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-100 flex items-center gap-1"
-                style={
-                  active
-                    ? { background: "var(--bg-overlay)", color: "var(--text-primary)", border: "1px solid var(--border-default)" }
-                    : { background: "transparent", color: "var(--text-tertiary)", border: "1px solid transparent" }
-                }
+                style={{
+                  padding: "0 12px", height: 36, fontSize: 11, fontWeight: active ? 500 : 400,
+                  color: active ? "var(--t1)" : "var(--t3)",
+                  borderBottom: active ? "2px solid var(--t1)" : "2px solid transparent",
+                  background: "none", transition: "all 0.1s", display: "flex", alignItems: "center", gap: 5,
+                }}
               >
                 {t}
                 {t === "Positions" && positions.length > 0 && (
-                  <span className="text-[9px] font-bold px-1 rounded-full"
-                    style={{ background: "var(--accent-dim)", color: "var(--accent)" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 10, background: "var(--raised)", color: "var(--t2)" }}>
                     {positions.length}
                   </span>
                 )}
@@ -199,28 +136,47 @@ export function PositionsPanel() {
             );
           })}
         </div>
-        {tab === "Positions" && <TotalPnl positions={positions} />}
+
+        {/* Order Book button */}
+        <button style={{
+          display: "flex", alignItems: "center", gap: 5, marginRight: 8,
+          padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 500,
+          color: "var(--t2)", border: "1px solid var(--b2)", background: "var(--raised)",
+        }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <rect x="1" y="1" width="4" height="1.5" rx="0.5" fill="currentColor" opacity="0.4"/>
+            <rect x="1" y="3.5" width="6" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+            <rect x="1" y="6" width="5" height="1.5" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="1" y="8.5" width="8" height="1.5" rx="0.5" fill="currentColor"/>
+          </svg>
+          Order Book
+        </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
+      {/* ── Content ── */}
+      <div style={{ flex: 1, overflowX: "auto", overflowY: "auto" }}>
         {tab === "Positions" && (
           !address ? (
-            <Empty icon="⬡" msg="Connect wallet to view positions" />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 6 }}>
+              <span style={{ fontSize: 18, opacity: 0.15 }}>◇</span>
+              <span style={{ fontSize: 11, color: "var(--t3)" }}>Connect wallet to view positions</span>
+            </div>
           ) : isLoading ? (
-            <div className="px-4 py-4 space-y-2">
-              {[0, 1].map(i => <div key={i} className="h-8 rounded-lg animate-shimmer" />)}
+            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              {[0, 1].map(i => <div key={i} className="animate-shimmer" style={{ height: 32, borderRadius: 6 }} />)}
             </div>
           ) : positions.length === 0 ? (
-            <Empty icon="◇" msg="No open positions" sub="Trade XAU/USD or SPX/USD perpetuals" />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 5 }}>
+              <span style={{ fontSize: 18, opacity: 0.12 }}>◇</span>
+              <span style={{ fontSize: 11, color: "var(--t3)" }}>No Open Positions</span>
+              <span style={{ fontSize: 10, color: "var(--t4)" }}>You don&apos;t have any open perpetual positions.</span>
+            </div>
           ) : (
-            <table className="w-full">
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <tr style={{ borderBottom: "1px solid var(--b1)" }}>
                   {TABLE_HEADERS.map((h, i) => (
-                    <th key={i}
-                      className={cn("px-4 py-2 text-[10px] font-semibold uppercase tracking-wider", i >= 2 ? "text-right" : "text-left")}
-                      style={{ color: "var(--text-muted)", letterSpacing: "0.08em" }}>
+                    <th key={i} style={{ ...TH, paddingLeft: i === 0 ? 16 : 12, paddingRight: i === TABLE_HEADERS.length - 1 ? 16 : 12, paddingTop: 6, paddingBottom: 6 }}>
                       {h}
                     </th>
                   ))}
@@ -232,8 +188,20 @@ export function PositionsPanel() {
             </table>
           )
         )}
-        {tab === "Orders"  && <Empty icon="◈" msg="No open orders" sub="Limit orders will appear here" />}
-        {tab === "History" && <Empty icon="◉" msg="No trade history" sub="Closed positions appear here" />}
+        {tab === "Active Orders" && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 5 }}>
+            <span style={{ fontSize: 18, opacity: 0.12 }}>◈</span>
+            <span style={{ fontSize: 11, color: "var(--t3)" }}>No Active Orders</span>
+            <span style={{ fontSize: 10, color: "var(--t4)" }}>Limit orders will appear here.</span>
+          </div>
+        )}
+        {tab === "Trade History" && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 5 }}>
+            <span style={{ fontSize: 18, opacity: 0.12 }}>◉</span>
+            <span style={{ fontSize: 11, color: "var(--t3)" }}>No Trade History</span>
+            <span style={{ fontSize: 10, color: "var(--t4)" }}>Closed positions will appear here.</span>
+          </div>
+        )}
       </div>
     </div>
   );

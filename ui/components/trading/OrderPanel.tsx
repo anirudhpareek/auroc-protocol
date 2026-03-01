@@ -3,257 +3,55 @@
 import { useState, useCallback } from "react";
 import { parseUnits } from "viem";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
-import { cn } from "@/lib/cn";
 import { CONTRACTS, MARKETS, PerpEngineAbi, ERC20Abi } from "@/lib/contracts";
 import { useMarketData } from "@/hooks/useMarketData";
 import { formatPrice } from "@/lib/format";
 
-/* ── Types ── */
 type Direction = "long" | "short";
 type OrderType = "Market" | "Limit";
 
 const AVAILABLE_MARKETS = [
-  { id: MARKETS.XAU_USD, symbol: "XAU", pair: "XAU/USD" },
-  { id: MARKETS.SPX_USD, symbol: "SPX", pair: "SPX/USD" },
+  { id: MARKETS.XAU_USD, symbol: "XAU", pair: "XAU/USD", color: "#d4a017" },
+  { id: MARKETS.SPX_USD, symbol: "SPX", pair: "SPX/USD", color: "#6366f1" },
 ] as const;
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/* ── Direction Toggle ── */
-function DirectionToggle({ value, onChange }: { value: Direction; onChange: (v: Direction) => void }) {
-  return (
-    <div className="flex gap-1.5 p-1 rounded-xl"
-      style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}>
-      {(["long", "short"] as Direction[]).map((d) => {
-        const active = value === d;
-        const isLong = d === "long";
-        return (
-          <button key={d} onClick={() => onChange(d)}
-            className="flex-1 py-2 rounded-lg text-xs font-bold tracking-wide transition-all duration-200 active:scale-[0.97]"
-            style={
-              active
-                ? {
-                    background: isLong
-                      ? "linear-gradient(135deg, #009f5e 0%, var(--long) 100%)"
-                      : "linear-gradient(135deg, #a01f36 0%, var(--short) 100%)",
-                    color: "#000",
-                    boxShadow: isLong
-                      ? "0 0 18px var(--long-glow), inset 0 1px 0 rgba(255,255,255,0.18)"
-                      : "0 0 18px var(--short-glow), inset 0 1px 0 rgba(255,255,255,0.10)",
-                    letterSpacing: "0.04em",
-                  }
-                : { background: "transparent", color: "var(--text-muted)", letterSpacing: "0.04em" }
-            }
-          >
-            {isLong ? "▲ " : "▼ "}{isLong ? "Long" : "Short"}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+const ROW: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between" };
+const LABEL: React.CSSProperties = { fontSize: 11, color: "var(--t3)" };
+const VALUE: React.CSSProperties = { fontSize: 11, color: "var(--t2)", fontFamily: "JetBrains Mono, monospace" };
 
-/* ── Order Type Pills ── */
-function OrderTypePills({ value, onChange }: { value: OrderType; onChange: (v: OrderType) => void }) {
+function DetailRow({ label, value, pencil }: { label: string; value: string; pencil?: boolean }) {
   return (
-    <div className="flex gap-1">
-      {(["Market", "Limit"] as OrderType[]).map((t) => {
-        const active = t === value;
-        return (
-          <button key={t} onClick={() => onChange(t)}
-            className="px-3 py-1 text-xs font-medium rounded-lg transition-all duration-100"
-            style={
-              active
-                ? { background: "var(--bg-overlay)", color: "var(--text-primary)", border: "1px solid var(--border-strong)" }
-                : { background: "transparent", color: "var(--text-tertiary)", border: "1px solid transparent" }
-            }
-          >
-            {t}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── Field Input ── */
-function FieldInput({
-  label, value, onChange, suffix, onMax, hint,
-}: {
-  label?: string; value: string; onChange: (v: string) => void;
-  suffix?: string; onMax?: () => void; hint?: React.ReactNode;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div className="space-y-1.5">
-      {(label || hint) && (
-        <div className="flex items-center justify-between">
-          {label && <span className="text-[11px] font-medium" style={{ color: "var(--text-secondary)" }}>{label}</span>}
-          {hint && <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>{hint}</span>}
-        </div>
-      )}
-      <div className="flex items-center gap-2 rounded-xl px-3 transition-all duration-150"
-        style={{
-          background: "var(--bg-elevated)",
-          border: `1px solid ${focused ? "var(--border-focus)" : "var(--border-default)"}`,
-          height: "42px",
-          boxShadow: focused ? "0 0 0 3px rgba(255,255,255,0.02)" : "none",
-        }}>
-        <input
-          type="text" inputMode="decimal" value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-          placeholder="0.00"
-          className="flex-1 bg-transparent text-sm tabular focus:outline-none"
-          style={{ color: "var(--text-primary)", caretColor: "var(--accent)" }}
-        />
-        {onMax && (
-          <button onClick={onMax}
-            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md active:scale-95"
-            style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent-mid)" }}>
-            MAX
-          </button>
+    <div style={ROW}>
+      <span style={LABEL}>{label}</span>
+      <span style={{ ...VALUE, display: "flex", alignItems: "center", gap: 3 }}>
+        {pencil && (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.5 }}>
+            <path d="M1 9L6.5 3.5C7.1 2.9 7.9 2.9 8.2 3.2C8.5 3.5 8.4 4.3 7.8 4.8L2.2 9.5L1 9Z" stroke="currentColor" strokeWidth="0.8"/>
+          </svg>
         )}
-        {suffix && <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text-tertiary)" }}>{suffix}</span>}
-      </div>
+        {value}
+      </span>
     </div>
   );
 }
 
-/* ── Quick Amounts ── */
-function QuickAmounts({ onSelect }: { onSelect: (pct: number) => void }) {
-  return (
-    <div className="grid grid-cols-4 gap-1.5">
-      {[10, 25, 50, 100].map((p) => (
-        <button key={p} onClick={() => onSelect(p)}
-          className="py-1.5 text-[11px] font-semibold rounded-lg transition-all active:scale-95"
-          style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "var(--bg-overlay)"; el.style.color = "var(--text-primary)"; el.style.borderColor = "var(--border-strong)";
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "var(--bg-elevated)"; el.style.color = "var(--text-secondary)"; el.style.borderColor = "var(--border-default)";
-          }}
-        >
-          {p === 100 ? "Max" : `${p}%`}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ── Leverage Control ── */
-function LevControl({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const pct = ((value - 1) / 99) * 100;
-  return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium" style={{ color: "var(--text-secondary)" }}>Leverage</span>
-        <span className="text-xs font-bold tabular px-2 py-0.5 rounded-lg"
-          style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent-mid)" }}>
-          {value}×
-        </span>
-      </div>
-      <div className="relative h-4 flex items-center">
-        <div className="absolute w-full h-[3px] rounded-full overflow-hidden" style={{ background: "var(--bg-overlay)" }}>
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(to right, rgba(245,166,35,0.3), var(--accent))" }} />
-        </div>
-        <input type="range" min={1} max={100} value={value} onChange={e => onChange(Number(e.target.value))}
-          className="absolute w-full opacity-0 cursor-pointer" style={{ height: "16px", zIndex: 2 }} />
-        <div className="absolute w-3.5 h-3.5 rounded-full pointer-events-none"
-          style={{ left: `calc(${pct}% - 7px)`, background: "var(--text-primary)", boxShadow: "0 0 0 2px var(--bg-surface), 0 0 10px var(--accent-glow)", zIndex: 1 }} />
-      </div>
-      <div className="flex gap-1">
-        {[1, 5, 10, 25, 50].map((lv) => (
-          <button key={lv} onClick={() => onChange(lv)}
-            className="flex-1 py-1 text-[10px] font-bold rounded-md transition-all"
-            style={
-              value === lv
-                ? { background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent-mid)" }
-                : { background: "var(--bg-elevated)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }
-            }
-          >
-            {lv}×
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── TP/SL ── */
-function TpSlSection({
-  enabled, onToggle, tp, sl, onTp, onSl,
-}: { enabled: boolean; onToggle: () => void; tp: string; sl: string; onTp: (v: string) => void; onSl: (v: string) => void }) {
-  return (
-    <div className="rounded-xl overflow-hidden"
-      style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}>
-      <button onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2.5">
-        <span className="text-[11px] font-medium" style={{ color: "var(--text-secondary)" }}>Take Profit / Stop Loss</span>
-        <div className="w-8 h-4 rounded-full relative transition-all duration-200"
-          style={{ background: enabled ? "var(--long)" : "var(--bg-overlay)", boxShadow: enabled ? "0 0 8px var(--long-glow)" : "none" }}>
-          <div className="absolute top-0.5 w-3 h-3 rounded-full transition-all duration-200"
-            style={{ background: "#fff", left: enabled ? "calc(100% - 14px)" : "2px" }} />
-        </div>
-      </button>
-      {enabled && (
-        <div className="px-3 pb-3 grid grid-cols-2 gap-2 animate-slide-up">
-          {[
-            { label: "TP", color: "var(--long)", val: tp, set: onTp, b: "var(--long-dim)" },
-            { label: "SL", color: "var(--short)", val: sl, set: onSl, b: "var(--short-dim)" },
-          ].map(({ label, color, val, set, b }) => (
-            <div key={label}>
-              <span className="text-[10px] font-medium" style={{ color }}>{label} Price</span>
-              <div className="mt-1 flex items-center gap-1 px-2 rounded-lg"
-                style={{ background: "var(--bg-overlay)", border: `1px solid ${b}`, height: "34px" }}>
-                <input type="text" value={val} onChange={e => set(e.target.value)}
-                  placeholder="0.00" className="flex-1 bg-transparent text-xs tabular focus:outline-none"
-                  style={{ color: "var(--text-primary)" }} />
-                <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>$</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SummaryRow({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>{label}</span>
-      <span className="text-[11px] tabular" style={{ color: color ?? "var(--text-secondary)" }}>{value}</span>
-    </div>
-  );
-}
-
-/* ── Main Component ── */
 export function OrderPanel() {
   const { address } = useAccount();
   const [selMarket, setSelMarket] = useState(AVAILABLE_MARKETS[0]);
   const [direction, setDirection] = useState<Direction>("long");
   const [orderType, setOrderType] = useState<OrderType>("Market");
+  const [leverage, setLeverage] = useState(20);
   const [collateral, setCollateral] = useState("");
-  const [limitPrice, setLimitPrice] = useState("");
-  const [leverage, setLeverage]     = useState(10);
-  const [tpsl, setTpsl]             = useState(false);
-  const [tp, setTp]                 = useState("");
-  const [sl, setSl]                 = useState("");
+  const [tpsl, setTpsl] = useState(false);
 
-  /* Live data */
-  const { marketInfo, isLoading: mktLoading } = useMarketData(selMarket.id);
-
-  /* Tx */
+  const { marketInfo } = useMarketData(selMarket.id);
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
-  /* USDC balance */
   const { data: rawBalance } = useReadContract({
     address: CONTRACTS.usdc,
     abi: ERC20Abi,
@@ -263,22 +61,22 @@ export function OrderPanel() {
   });
   const balanceNum = rawBalance ? Number(rawBalance as bigint) / 1e6 : 0;
 
-  /* Calcs */
   const collateralNum = parseFloat(collateral.replace(/,/g, "")) || 0;
-  const posSize       = collateralNum * leverage;
-  const fees          = posSize * 0.0005;
-  const liqPct        = (100 / leverage).toFixed(1);
-  const markStr       = marketInfo && marketInfo.markPrice > 0n ? formatPrice(marketInfo.markPrice) : "—";
+  const posSize = collateralNum * leverage;
+  const fees = posSize * 0.0005;
+  const markStr = marketInfo && marketInfo.markPrice > 0n ? formatPrice(marketInfo.markPrice) : "—";
+  const isLong = direction === "long";
+  const isBusy = isPending || isConfirming;
 
-  const handlePreset = useCallback((pct: number) => {
+  const handleQuickPct = useCallback((pct: number) => {
     setCollateral(fmt((balanceNum * pct) / 100));
   }, [balanceNum]);
 
   const handleTrade = () => {
     if (!address || !collateralNum) return;
-    const margin   = parseUnits(collateralNum.toFixed(6), 6);
-    const size     = parseUnits(posSize.toFixed(6), 6);
-    const signed   = direction === "long" ? size : -size;
+    const margin = parseUnits(collateralNum.toFixed(6), 6);
+    const size = parseUnits(posSize.toFixed(6), 6);
+    const signed = isLong ? size : -size;
     writeContract({
       address: CONTRACTS.perpEngine,
       abi: PerpEngineAbi,
@@ -287,145 +85,272 @@ export function OrderPanel() {
     });
   };
 
-  const isLong     = direction === "long";
-  const isBusy     = isPending || isConfirming;
-  const btnGrad    = isLong
-    ? "linear-gradient(135deg, #009f5e 0%, var(--long) 100%)"
-    : "linear-gradient(135deg, #a01f36 0%, var(--short) 100%)";
-  const btnGlow    = isLong ? "var(--long-glow)" : "var(--short-glow)";
-  const risk       = leverage > 50 ? "HIGH" : leverage > 20 ? "MEDIUM" : "LOW";
-  const riskStyle  = {
-    HIGH:   { bg: "var(--short-dim)",   c: "var(--short)"   },
-    MEDIUM: { bg: "var(--warning-dim)", c: "var(--warning)" },
-    LOW:    { bg: "var(--long-dim)",    c: "var(--long)"    },
-  }[risk];
+  const [focused, setFocused] = useState(false);
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--bg-surface)" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--panel)", overflowY: "auto" }}>
 
-      {/* Header */}
-      <div className="px-4 pt-3 pb-3 flex-shrink-0 space-y-2.5"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            {AVAILABLE_MARKETS.map((m) => (
-              <button key={m.id} onClick={() => setSelMarket(m)}
-                className="text-[11px] font-bold px-2 py-0.5 rounded-md transition-all"
-                style={
-                  m.id === selMarket.id
-                    ? { background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent-mid)" }
-                    : { background: "transparent", color: "var(--text-muted)", border: "1px solid transparent" }
-                }
-              >
-                {m.pair}
+      {/* ── Market selector ── */}
+      <div style={{ display: "flex", gap: 4, padding: "10px 12px 0" }}>
+        {AVAILABLE_MARKETS.map((m) => {
+          const active = m.id === selMarket.id;
+          return (
+            <button key={m.id} onClick={() => setSelMarket(m)}
+              style={{
+                padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                background: active ? "var(--raised)" : "transparent",
+                color: active ? "var(--t1)" : "var(--t3)",
+                border: `1px solid ${active ? "var(--b2)" : "transparent"}`,
+                transition: "all 0.1s",
+              }}
+            >
+              {m.pair}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Long / Short toggle ── */}
+      <div style={{ display: "flex", margin: "10px 12px 0", borderRadius: 8, overflow: "hidden", border: "1px solid var(--b1)" }}>
+        {(["long", "short"] as Direction[]).map((d) => {
+          const active = direction === d;
+          return (
+            <button key={d} onClick={() => setDirection(d)}
+              style={{
+                flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 600,
+                background: active
+                  ? d === "long" ? "var(--long-btn)" : "rgba(239,68,68,0.15)"
+                  : "transparent",
+                color: active
+                  ? d === "long" ? "var(--long)" : "var(--short)"
+                  : "var(--t3)",
+                transition: "all 0.12s",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {d === "long" ? "Long" : "Short"}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Order type + Cross + Leverage row ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 12px 0" }}>
+        {(["Market", "Limit"] as OrderType[]).map((t) => {
+          const active = orderType === t;
+          return (
+            <button key={t} onClick={() => setOrderType(t)}
+              style={{
+                padding: "3px 8px", borderRadius: 5, fontSize: 11, fontWeight: 500,
+                background: active ? "var(--raised)" : "transparent",
+                color: active ? "var(--t1)" : "var(--t3)",
+                border: `1px solid ${active ? "var(--b2)" : "transparent"}`,
+              }}
+            >
+              {t}
+            </button>
+          );
+        })}
+        <div style={{ flex: 1 }} />
+        <button style={{
+          display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 5,
+          fontSize: 11, color: "var(--t2)", border: "1px solid var(--b1)", background: "var(--raised)",
+        }}>
+          <span style={{ fontSize: 10 }}>⇄</span> Cross
+        </button>
+        <button style={{
+          display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 5,
+          fontSize: 11, fontWeight: 600, color: "var(--t1)", border: "1px solid var(--b2)", background: "var(--raised)",
+        }}
+          onClick={() => {
+            const next = leverage === 20 ? 10 : leverage === 10 ? 5 : leverage === 5 ? 50 : 20;
+            setLeverage(next);
+          }}
+        >
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ opacity: 0.6 }}>
+            <path d="M1 8L5 2L8.5 8" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round"/>
+          </svg>
+          {leverage}×
+        </button>
+      </div>
+
+      {/* ── Available + Max ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px 0" }}>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>
+          Available{" "}
+          <span style={{ color: "var(--t2)", fontFamily: "JetBrains Mono, monospace" }}>
+            {address ? fmt(balanceNum) : "0.00"}
+          </span>
+          {" "}USDC
+        </span>
+        <button onClick={() => setCollateral(fmt(balanceNum))}
+          style={{ fontSize: 11, fontWeight: 600, color: "var(--t2)", letterSpacing: "0.01em" }}>
+          Max
+        </button>
+      </div>
+
+      {/* ── Input box ── */}
+      <div style={{ margin: "6px 12px 0" }}>
+        <div style={{
+          borderRadius: 8, border: `1px solid ${focused ? "var(--b3)" : "var(--b1)"}`,
+          background: "var(--raised)", overflow: "hidden", transition: "border-color 0.1s",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px 3px" }}>
+            <span style={{ fontSize: 10, color: "var(--t3)", letterSpacing: "0.02em" }}>Order Value (USDC)</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: selMarket.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 7, fontWeight: 700, color: "#000" }}>{selMarket.symbol.slice(0, 2)}</span>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t2)" }}>{selMarket.symbol}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px 8px" }}>
+            <input
+              type="text" inputMode="decimal" value={collateral}
+              onChange={(e) => setCollateral(e.target.value)}
+              onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+              placeholder="0"
+              style={{
+                background: "transparent", border: "none", outline: "none",
+                fontSize: 18, fontWeight: 500, color: collateral ? "var(--t1)" : "var(--t3)",
+                width: "50%", fontFamily: "JetBrains Mono, monospace",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--t3)", fontFamily: "JetBrains Mono, monospace" }}>
+              ⬡ {collateralNum > 0 && markStr !== "—" ? fmt(collateralNum / parseFloat(markStr.replace(/,/g, ""))) : "0"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Slider ── */}
+      <div style={{ padding: "10px 12px 0" }}>
+        <div style={{ position: "relative", height: 16, display: "flex", alignItems: "center" }}>
+          <div style={{ position: "absolute", width: "100%", height: 2, background: "var(--b2)", borderRadius: 1 }}>
+            <div style={{ height: "100%", width: `${Math.min((collateralNum / Math.max(balanceNum, 0.01)) * 100, 100)}%`, background: isLong ? "var(--long)" : "var(--short)", borderRadius: 1, transition: "width 0.15s" }} />
+          </div>
+          <input type="range" min={0} max={balanceNum || 100} step={0.01} value={collateralNum}
+            onChange={(e) => setCollateral(fmt(Number(e.target.value)))}
+            style={{ position: "absolute", width: "100%", opacity: 0, cursor: "pointer", height: 16, zIndex: 2 }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+          {[0, 25, 50, 75, 100].map((p) => {
+            const isActive = balanceNum > 0 && Math.round((collateralNum / balanceNum) * 100) >= p;
+            return (
+              <button key={p} onClick={() => handleQuickPct(p)}
+                style={{ fontSize: 10, fontWeight: 500, color: isActive ? (isLong ? "var(--long)" : "var(--short)") : "var(--t3)", background: "none", border: "none", cursor: "pointer" }}>
+                {p}
               </button>
-            ))}
-          </div>
-          <OrderTypePills value={orderType} onChange={setOrderType} />
-        </div>
-        {!mktLoading && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>Mark Price</span>
-            <span className="text-xs tabular font-semibold" style={{ color: "var(--text-secondary)" }}>${markStr}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-4 space-y-4">
-          <DirectionToggle value={direction} onChange={setDirection} />
-
-          {orderType === "Limit" && (
-            <FieldInput label="Limit Price" value={limitPrice} onChange={setLimitPrice} suffix="USD" />
-          )}
-
-          <FieldInput
-            label="Collateral"
-            value={collateral}
-            onChange={setCollateral}
-            suffix="USDC"
-            onMax={() => setCollateral(fmt(balanceNum))}
-            hint={
-              <span>
-                Bal:{" "}
-                <span className="tabular" style={{ color: "var(--text-secondary)" }}>
-                  {address ? `$${fmt(balanceNum)}` : "—"}
-                </span>
-              </span>
-            }
-          />
-
-          <QuickAmounts onSelect={handlePreset} />
-
-          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl"
-            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}>
-            <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>Position Size</span>
-            <span className="text-sm font-bold tabular"
-              style={{ color: posSize > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
-              {posSize > 0 ? `$${fmt(posSize)}` : "—"}
-            </span>
-          </div>
-
-          <LevControl value={leverage} onChange={setLeverage} />
-          <TpSlSection enabled={tpsl} onToggle={() => setTpsl(p => !p)} tp={tp} sl={sl} onTp={setTp} onSl={setSl} />
-
-          {/* Summary */}
-          <div className="space-y-2 px-3 py-3 rounded-xl"
-            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}>
-            <SummaryRow label="Entry Price"    value={orderType === "Limit" && limitPrice ? `$${limitPrice}` : "Market"} />
-            <SummaryRow label="Liq. Distance"  value={collateralNum > 0 ? `~${liqPct}% from entry` : "—"} />
-            <SummaryRow label="Margin"         value={collateralNum > 0 ? `$${fmt(collateralNum)}` : "—"} />
-            <SummaryRow label="Fees (0.05%)"   value={fees > 0 ? `$${fees.toFixed(4)}` : "—"} color="var(--text-tertiary)" />
-            <div className="divider" />
-            <div className="flex items-center justify-between">
-              <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>Risk Score</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: riskStyle.bg, color: riskStyle.c }}>{risk}</span>
-            </div>
-          </div>
-
-          {isSuccess && (
-            <div className="px-3 py-2 rounded-xl animate-slide-up"
-              style={{ background: "var(--long-dim)", border: "1px solid var(--long-mid)" }}>
-              <span className="text-[11px] font-semibold" style={{ color: "var(--long)" }}>
-                ✓ Position opened
-              </span>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      {/* ── TP / SL toggle ── */}
+      <div style={{ padding: "10px 12px 0" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
+          <div onClick={() => setTpsl(p => !p)} style={{
+            width: 14, height: 14, borderRadius: 3, border: `1px solid ${tpsl ? (isLong ? "var(--long)" : "var(--short)") : "var(--b3)"}`,
+            background: tpsl ? (isLong ? "var(--long-btn)" : "rgba(239,68,68,0.15)") : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            {tpsl && <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke={isLong ? "var(--long)" : "var(--short)"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+          </div>
+          <span style={{ fontSize: 11, color: "var(--t2)" }}>Take Profit / Stop Loss</span>
+        </label>
+      </div>
+
+      {/* ── Action button ── */}
+      <div style={{ padding: "12px 12px 0" }}>
         {!address ? (
-          <p className="text-center py-2 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--t3)", padding: "12px 0" }}>
             Connect wallet to trade
-          </p>
+          </div>
         ) : (
-          <button
-            onClick={handleTrade}
-            disabled={isBusy || !collateralNum}
-            className="w-full py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98] relative overflow-hidden disabled:opacity-40"
+          <button onClick={handleTrade} disabled={isBusy || !collateralNum}
             style={{
-              background: btnGrad, color: "#000",
-              boxShadow: isBusy ? "none" : `0 0 24px ${btnGlow}, inset 0 1px 0 rgba(255,255,255,0.15)`,
-              letterSpacing: "0.04em",
+              width: "100%", padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 600,
+              letterSpacing: "0.02em", cursor: collateralNum && !isBusy ? "pointer" : "not-allowed",
+              background: isLong ? "var(--long-btn)" : "rgba(239,68,68,0.15)",
+              color: isLong ? "var(--long)" : "var(--short)",
+              border: `1px solid ${isLong ? "var(--long-mid)" : "var(--short-mid)"}`,
+              transition: "all 0.12s", opacity: collateralNum && !isBusy ? 1 : 0.5,
             }}
+            onMouseEnter={e => { if (collateralNum && !isBusy) (e.currentTarget as HTMLElement).style.background = isLong ? "var(--long-hover)" : "rgba(239,68,68,0.22)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLong ? "var(--long-btn)" : "rgba(239,68,68,0.15)"; }}
           >
-            <span className="absolute inset-0 pointer-events-none"
-              style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 55%)" }} />
-            <span className="relative">
-              {isBusy
-                ? (isConfirming ? "Confirming…" : "Sign in Wallet…")
-                : `${isLong ? "▲ Long" : "▼ Short"} ${selMarket.pair}`}
-            </span>
+            {isBusy ? (isConfirming ? "Confirming…" : "Sign in Wallet…") : `${isLong ? "Long" : "Short"} ${selMarket.pair}`}
           </button>
         )}
-        <p className="text-center text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
-          Testnet · PerpV2 · Arbitrum Sepolia
-        </p>
       </div>
+
+      {isSuccess && (
+        <div style={{ margin: "8px 12px 0", padding: "8px 10px", borderRadius: 7, background: "var(--long-dim)", border: "1px solid var(--long-mid)" }}>
+          <span style={{ fontSize: 11, color: "var(--long)" }}>✓ Position opened successfully</span>
+        </div>
+      )}
+
+      {/* ── Separator ── */}
+      <div style={{ height: 1, background: "var(--b1)", margin: "12px 0 0" }} />
+
+      {/* ── Trade details ── */}
+      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <DetailRow label="Liquidation Price" value="—" />
+        <DetailRow label="Order Value" value={collateralNum > 0 ? `$${fmt(posSize)}` : "$0.00"} />
+        <DetailRow label="Margin Required" value={collateralNum > 0 ? `$${fmt(collateralNum)}` : "$0.00"} />
+        <DetailRow label="Slippage Tolerance" value="10.0%" pencil />
+        <DetailRow
+          label="Auroc Fees"
+          value={fees > 0 ? `$${fees.toFixed(4)} / $${(fees * 1.2).toFixed(4)}` : "$0.00 / $0.00"}
+        />
+      </div>
+
+      <div style={{ padding: "0 12px 10px" }}>
+        <span style={{ fontSize: 10, color: "var(--t3)" }}>Auroc takes 0% fees on all trades</span>
+      </div>
+
+      {/* ── Separator ── */}
+      <div style={{ height: 1, background: "var(--b1)" }} />
+
+      {/* ── USDC balance row ── */}
+      <div style={{ padding: "10px 12px" }}>
+        <div style={ROW}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 7, fontWeight: 700, color: "#fff" }}>$</span>
+            </div>
+            <span style={{ fontSize: 12, color: "var(--t1)", fontFamily: "JetBrains Mono, monospace" }}>
+              {address ? fmt(balanceNum) : "0.00"}
+            </span>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ color: "var(--t3)", cursor: "pointer" }}>
+              <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9"/>
+              <path d="M5.5 5V8" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+              <circle cx="5.5" cy="3.5" r="0.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <button style={{
+            padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
+            color: "var(--t1)", border: "1px solid var(--b2)", background: "var(--raised)",
+            display: "flex", alignItems: "center", gap: 4,
+          }}>
+            Transfer <span style={{ fontSize: 10 }}>›</span>
+          </button>
+        </div>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 7 }}>
+          <DetailRow label="Maintenance Margin" value="—" />
+          <DetailRow label="Cross Account Leverage" value="—" />
+        </div>
+      </div>
+
+      {/* ── Mark price footer ── */}
+      <div style={{ padding: "0 12px 12px", marginTop: "auto" }}>
+        <div style={{ height: 1, background: "var(--b1)", marginBottom: 8 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: "var(--t3)" }}>Mark · ${markStr}</span>
+          <span style={{ fontSize: 10, color: "var(--t3)" }}>Arbitrum Sepolia</span>
+        </div>
+      </div>
+
     </div>
   );
 }

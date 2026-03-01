@@ -1,382 +1,359 @@
 "use client";
-
-import { useState, useRef, useEffect } from "react";
-import { cn } from "@/lib/cn";
+import { useState } from "react";
 import { useMarketData } from "@/hooks/useMarketData";
 import { MARKETS } from "@/lib/contracts";
 import { Regime } from "@/types";
-import { formatPrice, formatConfidence } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 
-/* ── Static market config ── */
-const MARKET_CONFIG = [
+/* ── Markets ── */
+const MARKETS_CFG = [
   {
-    id: MARKETS.XAU_USD,
-    symbol: "XAU",
-    name: "Gold",
-    pair: "XAU/USD",
-    mockChange: "+0.45%",
-    mockVol: "$287M",
-    mockOi: "$124.7M",
-    mockFunding: "+0.0031%",
-    fundingPositive: true,
+    id: MARKETS.XAU_USD, sym: "XAU", pair: "XAU/USD", name: "Gold",
+    color: "#d4a017", oracleStr: "2,890.15", vol: "$287M", oi: "$124.7M",
+    funding: "-0.0031%", fundingUp: false, change: "+0.45%", changeUp: true,
   },
   {
-    id: MARKETS.SPX_USD,
-    symbol: "SPX",
-    name: "S&P 500",
-    pair: "SPX/USD",
-    mockChange: "-0.12%",
-    mockVol: "$156M",
-    mockOi: "$89.4M",
-    mockFunding: "-0.0018%",
-    fundingPositive: false,
+    id: MARKETS.SPX_USD, sym: "SPX", pair: "SPX/USD", name: "S&P 500",
+    color: "#22c55e", oracleStr: "5,234.95", vol: "$156M", oi: "$89.4M",
+    funding: "-0.0018%", fundingUp: false, change: "-0.12%", changeUp: false,
   },
 ] as const;
+type MktCfg = (typeof MARKETS_CFG)[number];
 
-type MarketConfig = (typeof MARKET_CONFIG)[number];
+const TIMEFRAMES = ["1m","3m","5m","15m","1H","4H","1D","1W"];
 
-const TIMEFRAMES = ["1m", "5m", "15m", "1H", "4H", "1D", "1W"];
+/* ── TradingView-style candlestick chart SVG ── */
+const CANDLES = [
+  {o:2840,c:2858,h:2865,l:2832},{o:2858,c:2850,h:2868,l:2845},
+  {o:2850,c:2871,h:2878,l:2848},{o:2871,c:2864,h:2880,l:2860},
+  {o:2864,c:2882,h:2890,l:2862},{o:2882,c:2875,h:2888,l:2870},
+  {o:2875,c:2893,h:2900,l:2873},{o:2893,c:2886,h:2898,l:2882},
+  {o:2886,c:2904,h:2912,l:2884},{o:2904,c:2896,h:2910,l:2892},
+  {o:2896,c:2915,h:2922,l:2894},{o:2915,c:2908,h:2920,l:2905},
+  {o:2908,c:2926,h:2934,l:2906},{o:2926,c:2919,h:2930,l:2915},
+  {o:2919,c:2938,h:2945,l:2917},{o:2938,c:2930,h:2942,l:2926},
+  {o:2930,c:2948,h:2955,l:2928},{o:2948,c:2940,h:2952,l:2936},
+  {o:2940,c:2958,h:2965,l:2938},{o:2958,c:2950,h:2962,l:2946},
+  {o:2950,c:2968,h:2975,l:2948},{o:2968,c:2960,h:2972,l:2956},
+  {o:2960,c:2878,h:2965,l:2862},{o:2878,c:2894,h:2898,l:2870},
+  {o:2894,c:2885,h:2900,l:2882},{o:2885,c:2892,h:2896,l:2880},
+  {o:2892,c:2906,h:2912,l:2890},{o:2906,c:2892,h:2910,l:2888},
+];
+const VOLUMES = [1.2,0.8,1.5,0.9,1.8,1.1,2.1,1.3,1.6,0.7,2.4,1.0,1.9,0.8,2.2,1.4,1.7,0.9,2.0,1.2,2.3,1.1,3.1,1.8,1.4,1.0,1.6,1.3];
 
-const REGIME_STYLES: Record<number, { label: string; bg: string; text: string; glow: string }> = {
-  [Regime.OPEN]:       { label: "OPEN",       bg: "var(--long-dim)",    text: "var(--long)",    glow: "var(--long)"    },
-  [Regime.OFF_HOURS]:  { label: "OFF-HOURS",  bg: "var(--accent-dim)",  text: "var(--accent)",  glow: "var(--accent)"  },
-  [Regime.TRANSITION]: { label: "TRANSITION", bg: "var(--info-dim)",    text: "var(--info)",    glow: "var(--info)"    },
-  [Regime.STRESS]:     { label: "STRESS",     bg: "var(--short-dim)",   text: "var(--short)",   glow: "var(--short)"   },
-};
+function ChartSVG() {
+  const W = 900, H = 280, PAD = { t: 8, r: 68, b: 24, l: 4 };
+  const VOL_H = 40;
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b - VOL_H;
+  const n = CANDLES.length;
+  const barW = cW / n;
+  const bodyW = barW * 0.55;
 
-/* ── Fake candlestick chart (SVG) ── */
-function CandlestickChart() {
-  const candles = [
-    { o:60,  c:75,  h:80,  l:55  },
-    { o:75,  c:68,  h:78,  l:62  },
-    { o:68,  c:82,  h:86,  l:65  },
-    { o:82,  c:78,  h:90,  l:75  },
-    { o:78,  c:95,  h:98,  l:76  },
-    { o:95,  c:88,  h:97,  l:84  },
-    { o:88,  c:102, h:106, l:86  },
-    { o:102, c:96,  h:104, l:93  },
-    { o:96,  c:112, h:116, l:94  },
-    { o:112, c:106, h:114, l:102 },
-    { o:106, c:120, h:124, l:104 },
-    { o:120, c:115, h:122, l:111 },
-    { o:115, c:128, h:132, l:113 },
-    { o:128, c:122, h:130, l:118 },
-    { o:122, c:136, h:140, l:120 },
-    { o:136, c:130, h:138, l:126 },
-    { o:130, c:142, h:146, l:128 },
-    { o:142, c:138, h:145, l:134 },
-    { o:138, c:150, h:154, l:136 },
-    { o:150, c:145, h:153, l:142 },
-  ];
+  const prices = CANDLES.flatMap(c => [c.h, c.l]);
+  const minP = Math.min(...prices) - 6;
+  const maxP = Math.max(...prices) + 6;
+  const pRange = maxP - minP;
 
-  const W = 900; const H = 260; const PAD_X = 16; const PAD_Y = 20;
-  const chartW = W - PAD_X * 2;
-  const chartH = H - PAD_Y * 2;
-  const allP = candles.flatMap(c => [c.h, c.l]);
-  const minP = Math.min(...allP) - 8;
-  const maxP = Math.max(...allP) + 8;
-  const range = maxP - minP;
-  const cw = chartW / candles.length;
-  const bw = cw * 0.52;
+  const maxV = Math.max(...VOLUMES);
 
-  const toY = (p: number) => PAD_Y + chartH - ((p - minP) / range) * chartH;
-  const toX = (i: number) => PAD_X + i * cw + cw / 2;
+  const toX = (i: number) => PAD.l + (i + 0.5) * barW;
+  const toY = (p: number) => PAD.t + cH - ((p - minP) / pRange) * cH;
+  const toYV = (v: number) => H - PAD.b - (v / maxV) * VOL_H;
 
-  const lastClose = candles[candles.length - 1].c;
+  const lastC = CANDLES[n - 1];
+  const lastPrice = lastC.c;
+  const lastY = toY(lastPrice);
 
-  /* Area path for gradient fill under price line */
-  const areaPath = candles.map((c, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(c.c).toFixed(1)}`).join(" ") +
-    ` L${toX(candles.length - 1).toFixed(1)},${PAD_Y + chartH} L${toX(0).toFixed(1)},${PAD_Y + chartH} Z`;
+  /* Price labels on right axis */
+  const priceLabels = [0, 0.25, 0.5, 0.75, 1].map(t => minP + t * pRange);
 
   return (
-    <svg
-      className="w-full h-full"
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      style={{ background: "var(--bg-base)" }}
-    >
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+      style={{ background: "#0d1117", display: "block" }}>
       <defs>
-        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="var(--long)" stopOpacity="0.06" />
-          <stop offset="100%" stopColor="var(--long)" stopOpacity="0"    />
-        </linearGradient>
+        <clipPath id="chartClip">
+          <rect x={PAD.l} y={PAD.t} width={cW} height={cH + VOL_H} />
+        </clipPath>
       </defs>
 
-      {/* Grid */}
-      {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
-        <line key={i} x1={PAD_X} y1={PAD_Y + chartH * t} x2={W - PAD_X} y2={PAD_Y + chartH * t}
-          stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+      {/* Grid lines */}
+      {[0,0.25,0.5,0.75,1].map((t,i) => (
+        <line key={i} x1={PAD.l} x2={W - PAD.r} y1={PAD.t + cH * t} y2={PAD.t + cH * t}
+          stroke="rgba(42,46,57,0.8)" strokeWidth="1" />
       ))}
-      {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t, i) => (
-        <line key={i} x1={PAD_X + chartW * t} y1={PAD_Y} x2={PAD_X + chartW * t} y2={PAD_Y + chartH}
-          stroke="rgba(255,255,255,0.025)" strokeWidth="1" />
+      {[0,0.2,0.4,0.6,0.8,1].map((t,i) => (
+        <line key={i} x1={PAD.l + cW * t} x2={PAD.l + cW * t} y1={PAD.t} y2={H - PAD.b}
+          stroke="rgba(42,46,57,0.5)" strokeWidth="1" />
       ))}
 
-      {/* Area fill */}
-      <path d={areaPath} fill="url(#areaGrad)" />
+      <g clipPath="url(#chartClip)">
+        {/* Volume bars */}
+        {CANDLES.map((c, i) => {
+          const up = c.c >= c.o;
+          const vH = (VOLUMES[i] / maxV) * VOL_H;
+          return (
+            <rect key={`v${i}`}
+              x={toX(i) - bodyW / 2} y={H - PAD.b - vH}
+              width={bodyW} height={vH}
+              fill={up ? "rgba(38,166,154,0.35)" : "rgba(239,83,80,0.35)"}
+              rx="1"
+            />
+          );
+        })}
 
-      {/* Candles */}
-      {candles.map((c, i) => {
-        const up = c.c >= c.o;
-        const color = up ? "var(--long)" : "var(--short)";
-        const bodyTop = toY(Math.max(c.o, c.c));
-        const bodyBot = toY(Math.min(c.o, c.c));
-        const bh = Math.max(bodyBot - bodyTop, 1.5);
+        {/* Candles */}
+        {CANDLES.map((c, i) => {
+          const up = c.c >= c.o;
+          const upColor = "#26a69a";
+          const dnColor = "#ef5350";
+          const color = up ? upColor : dnColor;
+          const bTop = toY(Math.max(c.o, c.c));
+          const bBot = toY(Math.min(c.o, c.c));
+          const bH = Math.max(bBot - bTop, 1);
+          return (
+            <g key={i}>
+              <line x1={toX(i)} y1={toY(c.h)} x2={toX(i)} y2={toY(c.l)}
+                stroke={color} strokeWidth="1" />
+              <rect x={toX(i) - bodyW / 2} y={bTop} width={bodyW} height={bH}
+                fill={color} rx="0.5" />
+            </g>
+          );
+        })}
+      </g>
+
+      {/* Current price dashed line */}
+      <line x1={PAD.l} y1={lastY} x2={W - PAD.r} y2={lastY}
+        stroke="#ef5350" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.7" />
+
+      {/* Price axis labels */}
+      {priceLabels.map((p, i) => (
+        <text key={i} x={W - PAD.r + 6} y={PAD.t + cH - ((p - minP) / pRange) * cH + 4}
+          fill="rgba(178,181,190,0.7)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+          {p.toFixed(0)}
+        </text>
+      ))}
+
+      {/* Current price label box */}
+      <rect x={W - PAD.r + 1} y={lastY - 8} width={PAD.r - 2} height={16}
+        fill="#ef5350" rx="2" />
+      <text x={W - PAD.r + PAD.r / 2} y={lastY + 4} textAnchor="middle"
+        fill="#fff" fontSize="9" fontWeight="600" fontFamily="JetBrains Mono, monospace">
+        {lastPrice.toFixed(2)}
+      </text>
+
+      {/* Time labels */}
+      {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
+        const idx = Math.floor(t * (n - 1));
+        const hours = 9 + Math.floor(idx * 6.5 / n);
+        const mins = Math.floor((idx * 390 / n) % 60);
         return (
-          <g key={i}>
-            <line x1={toX(i)} y1={toY(c.h)} x2={toX(i)} y2={toY(c.l)}
-              stroke={color} strokeWidth="1" strokeOpacity="0.55" />
-            <rect x={toX(i) - bw / 2} y={bodyTop} width={bw} height={bh}
-              fill={color} fillOpacity={up ? "0.9" : "0.75"} rx="1.5" />
-          </g>
+          <text key={i} x={PAD.l + cW * t} y={H - PAD.b + 13}
+            textAnchor="middle" fill="rgba(178,181,190,0.6)" fontSize="8.5"
+            fontFamily="JetBrains Mono, monospace">
+            {`${hours.toString().padStart(2,"0")}:${mins.toString().padStart(2,"0")}`}
+          </text>
         );
       })}
 
-      {/* Current price line */}
-      <line x1={PAD_X} y1={toY(lastClose)} x2={W - PAD_X} y2={toY(lastClose)}
-        stroke="var(--long)" strokeWidth="0.75" strokeOpacity="0.35" strokeDasharray="5 4" />
-
-      {/* Price label */}
-      <rect x={W - PAD_X - 2} y={toY(lastClose) - 8} width={2} height={16}
-        fill="var(--long)" rx="1" />
+      {/* OHLC header */}
+      <text x={PAD.l + 4} y={PAD.t + 14} fill="rgba(178,181,190,0.8)" fontSize="9.5" fontFamily="JetBrains Mono, monospace">
+        {`O ${CANDLES[n-1].o}  H ${CANDLES[n-1].h}  L ${CANDLES[n-1].l}  C ${CANDLES[n-1].c}  ${lastC.c > lastC.o ? "+" : ""}${(lastC.c - lastC.o).toFixed(0)}`}
+      </text>
 
       {/* Watermark */}
-      <text x={W / 2} y={H - 6} textAnchor="middle"
-        fill="rgba(255,255,255,0.04)" fontSize="10" fontFamily="Inter, sans-serif" letterSpacing="4">
-        AUROC PROTOCOL · TRADINGVIEW
+      <text x={W / 2} y={H / 2 + 20} textAnchor="middle"
+        fill="rgba(255,255,255,0.025)" fontSize="28" fontWeight="700"
+        fontFamily="Inter, sans-serif" letterSpacing="4">
+        AUROC
       </text>
     </svg>
   );
 }
 
-/* ── Stat cell ── */
-function Stat({
-  label, value, color, loading,
-}: { label: string; value: string; color?: string; loading?: boolean }) {
+/* ── Chart toolbar (TradingView-style) ── */
+function ChartToolbar({ tf, onTf }: { tf: string; onTf: (t: string) => void }) {
+  const btnS: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    padding: "0 8px", height: "100%", fontSize: 11, color: "var(--t2)",
+    borderRight: "1px solid var(--b1)", cursor: "pointer", gap: 4, flexShrink: 0,
+    transition: "color 0.1s",
+  };
   return (
-    <div className="flex items-center gap-1.5 flex-shrink-0">
-      <span className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>{label}</span>
-      {loading ? (
-        <div className="w-12 h-3 rounded animate-shimmer" />
-      ) : (
-        <span className="text-[11px] font-medium tabular" style={{ color: color ?? "var(--text-primary)" }}>
-          {value}
-        </span>
+    <div style={{
+      height: 34, display: "flex", alignItems: "center", background: "var(--surface)",
+      borderBottom: "1px solid var(--b1)", overflow: "hidden",
+    }}>
+      {/* Timeframe */}
+      <div style={{ ...btnS, color: "var(--t1)", fontWeight: 600, fontSize: 11 }}>{tf}
+        <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1L4 4L7 1" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round"/></svg>
+      </div>
+      {/* Cursor */}
+      <div style={btnS}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L7 10L8 7L11 6L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg>
+      </div>
+      {/* Indicators */}
+      <div style={{ ...btnS, gap: 5 }}>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M1 8L3.5 5L6 7L9 3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span>Indicators</span>
+      </div>
+      {/* Layout */}
+      <div style={btnS}>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
+          <rect x="6" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
+          <rect x="1" y="6" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
+          <rect x="6" y="6" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
+        </svg>
+      </div>
+      {/* Nav */}
+      <div style={btnS}>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7 2L3 5.5L7 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+      </div>
+      <div style={btnS}>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M4 2L8 5.5L4 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      {/* Source */}
+      <div style={{ ...btnS, color: "var(--t1)", fontWeight: 600 }}>
+        Auroc
+        <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1L4 4L7 1" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round"/></svg>
+      </div>
+      {/* Settings */}
+      <div style={btnS}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.1"/>
+          <path d="M6 1V2.5M6 9.5V11M1 6H2.5M9.5 6H11M2.64 2.64L3.7 3.7M8.3 8.3L9.36 9.36M9.36 2.64L8.3 3.7M3.7 8.3L2.64 9.36" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+        </svg>
+      </div>
+      {/* Expand */}
+      <div style={btnS}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M7.5 1.5H10.5V4.5M4.5 10.5H1.5V7.5M10.5 7.5V10.5H7.5M1.5 4.5V1.5H4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      {/* Camera */}
+      <div style={{ ...btnS, borderRight: "none" }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="3.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.1"/>
+          <circle cx="6" cy="7" r="2" stroke="currentColor" strokeWidth="1.1"/>
+          <path d="M4 3.5L4.5 2H7.5L8 3.5" stroke="currentColor" strokeWidth="1.1"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ── Asset info bar (Trojan-style) ── */
+function AssetBar({ mkt }: { mkt: MktCfg }) {
+  const { marketInfo } = useMarketData(mkt.id);
+  const markStr = marketInfo && marketInfo.markPrice > 0n
+    ? formatPrice(marketInfo.markPrice) : "2,892.40";
+
+  const sep = <div style={{ width: 1, height: 24, background: "var(--b1)", flexShrink: 0 }} />;
+
+  return (
+    <div style={{
+      height: 44, display: "flex", alignItems: "center", gap: 16,
+      padding: "0 14px", background: "var(--surface)", borderBottom: "1px solid var(--b1)",
+      flexShrink: 0, overflow: "hidden",
+    }}>
+      {/* Star */}
+      <button style={{ color: "var(--t3)", fontSize: 16, flexShrink: 0 }}>☆</button>
+
+      {/* Market selector */}
+      <button style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+        <div style={{ width: 22, height: 22, borderRadius: "50%", background: mkt.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>{mkt.sym[0]}</div>
+        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--t1)" }}>{mkt.sym}</span>
+        <svg width="9" height="6" viewBox="0 0 9 6" fill="none"><path d="M1 1L4.5 5L8 1" stroke="var(--t2)" strokeWidth="1.3" strokeLinecap="round"/></svg>
+      </button>
+
+      {/* Price */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span className="tabular" style={{ fontSize: 16, fontWeight: 700, color: "var(--t1)", letterSpacing: "-0.03em" }}>${markStr}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: mkt.changeUp ? "var(--long)" : "var(--short)" }}>{mkt.change}</span>
+      </div>
+
+      {sep}
+
+      {/* Oracle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>Oracle Price</span>
+        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.oracleStr}</span>
+      </div>
+
+      {sep}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>24h Volume</span>
+        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.vol}</span>
+      </div>
+
+      {sep}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>Open Interest</span>
+        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.oi}</span>
+      </div>
+
+      {sep}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>Funding / Countdown</span>
+        <span className="tabular" style={{ fontSize: 11, color: mkt.fundingUp ? "var(--long)" : "var(--short)" }}>{mkt.funding}</span>
+        <span className="tabular" style={{ fontSize: 11, color: "var(--t3)" }}>03:42:18</span>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      {/* Regime */}
+      {marketInfo && (
+        <div style={{
+          padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+          background: marketInfo.regime === Regime.OPEN ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
+          color: marketInfo.regime === Regime.OPEN ? "var(--long)" : "var(--warning)",
+          border: `1px solid ${marketInfo.regime === Regime.OPEN ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
+        }}>
+          {marketInfo.regime === Regime.OPEN ? "● OPEN" : "● OFF-HOURS"}
+        </div>
       )}
     </div>
   );
 }
 
-/* ── Price display with flash animation ── */
-function LivePrice({ price, loading }: { price: string; loading: boolean }) {
-  const prevRef = useRef(price);
-  const [flashClass, setFlashClass] = useState("");
-
-  useEffect(() => {
-    if (price !== prevRef.current && !loading) {
-      const isUp = price > prevRef.current;
-      setFlashClass(isUp ? "flash-up" : "flash-down");
-      prevRef.current = price;
-      const t = setTimeout(() => setFlashClass(""), 800);
-      return () => clearTimeout(t);
-    }
-  }, [price, loading]);
-
-  if (loading) {
-    return <div className="w-32 h-6 rounded-md animate-shimmer" />;
-  }
-
-  return (
-    <span
-      className={cn("text-xl font-semibold tabular", flashClass)}
-      style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}
-    >
-      ${price}
-    </span>
-  );
-}
-
-/* ── Asset selector dropdown ── */
-function AssetMenu({
-  selected,
-  onSelect,
-  onClose,
-}: {
-  selected: MarketConfig;
-  onSelect: (m: MarketConfig) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      className="absolute top-full left-0 mt-1 w-52 rounded-xl overflow-hidden z-50 animate-slide-up"
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border-strong)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px var(--border-subtle)",
-      }}
-    >
-      {MARKET_CONFIG.map((m) => {
-        const active = m.id === selected.id;
-        return (
-          <button
-            key={m.id}
-            onClick={() => { onSelect(m); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 transition-colors"
-            style={{ background: active ? "var(--bg-overlay)" : "transparent" }}
-            onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "var(--bg-overlay)" : "transparent"; }}
-          >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "var(--accent-dim)", border: "1px solid var(--accent-mid)" }}>
-              <span className="text-[11px] font-bold" style={{ color: "var(--accent)" }}>{m.symbol[0]}</span>
-            </div>
-            <div className="text-left">
-              <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{m.pair}</div>
-              <div className="text-[10px]" style={{ color: "var(--text-tertiary)" }}>{m.name} · RWA Perp</div>
-            </div>
-            {active && (
-              <div className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--long)" }} />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── Main Component ── */
 export function ChartPanel() {
-  const [market, setMarket]         = useState<MarketConfig>(MARKET_CONFIG[0]);
-  const [tf, setTf]                 = useState("15m");
-  const [showDropdown, setDropdown] = useState(false);
-
-  /* Real on-chain market data */
-  const { marketInfo, isLoading } = useMarketData(market.id);
-
-  /* Display values — prefer live chain data, fall back to mock */
-  const indexPriceStr = marketInfo && marketInfo.indexPrice > 0n
-    ? formatPrice(marketInfo.indexPrice)
-    : "2,890.15";
-
-  const markPriceStr = marketInfo && marketInfo.markPrice > 0n
-    ? formatPrice(marketInfo.markPrice)
-    : "2,892.40";
-
-  const regimeNum = marketInfo ? marketInfo.regime : Regime.OPEN;
-  const rs = REGIME_STYLES[regimeNum] ?? REGIME_STYLES[Regime.OPEN];
-
-  const confidenceStr = marketInfo && marketInfo.confidence > 0n
-    ? formatConfidence(marketInfo.confidence)
-    : "98.5%";
+  const [mkt, setMkt] = useState<MktCfg>(MARKETS_CFG[0]);
+  const [tf, setTf]   = useState("15m");
 
   return (
-    <div className="h-full flex flex-col" style={{ background: "var(--bg-base)" }}>
-
-      {/* ── Top bar ── */}
-      <div
-        className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5"
-        style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-default)", minHeight: "52px" }}
-      >
-        {/* Asset picker */}
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setDropdown(!showDropdown)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-150"
-            style={{
-              background: showDropdown ? "var(--bg-elevated)" : "transparent",
-              border: `1px solid ${showDropdown ? "var(--border-default)" : "transparent"}`,
-            }}
-          >
-            <div className="w-6 h-6 rounded-md flex items-center justify-center"
-              style={{ background: "var(--accent-dim)", border: "1px solid var(--accent-mid)" }}>
-              <span className="text-[10px] font-bold" style={{ color: "var(--accent)" }}>{market.symbol[0]}</span>
-            </div>
-            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{market.pair}</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-              <path d="M1 1L5 5L9 1" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {showDropdown && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setDropdown(false)} />
-              <AssetMenu
-                selected={market}
-                onSelect={setMarket}
-                onClose={() => setDropdown(false)}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Live price */}
-        <LivePrice price={markPriceStr} loading={isLoading} />
-
-        <span className="text-xs font-medium" style={{
-          color: market.fundingPositive ? "var(--long)" : "var(--short)"
-        }}>
-          {market.mockChange}
-        </span>
-
-        {/* Divider */}
-        <div className="w-px h-5 flex-shrink-0 hidden sm:block" style={{ background: "var(--border-default)" }} />
-
-        {/* Stats row */}
-        <div className="hidden lg:flex items-center gap-4 flex-wrap">
-          <Stat label="Index"   value={`$${indexPriceStr}`}        loading={isLoading} />
-          <Stat label="Mark"    value={`$${markPriceStr}`}          loading={isLoading} />
-          <Stat label="Conf."   value={confidenceStr}               loading={isLoading} color="var(--info)" />
-          <Stat label="Funding" value={market.mockFunding}          color={market.fundingPositive ? "var(--long)" : "var(--short)"} />
-          <Stat label="OI"      value={market.mockOi}               />
-          <Stat label="24h Vol" value={market.mockVol}              />
-        </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Regime badge */}
-        <div
-          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg flex-shrink-0"
-          style={{ background: rs.bg, border: `1px solid ${rs.text}20` }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{
-              background: rs.glow,
-              boxShadow: `0 0 6px ${rs.glow}`,
-              animation: regimeNum === Regime.OPEN ? "live-pulse 2s ease-in-out infinite" : "none",
-            }}
-          />
-          <span className="text-[10px] font-bold tracking-widest" style={{ color: rs.text, letterSpacing: "0.1em" }}>
-            {rs.label}
-          </span>
-        </div>
-
-        {/* Divider */}
-        <div className="w-px h-5 flex-shrink-0" style={{ background: "var(--border-default)" }} />
-
-        {/* Timeframes */}
-        <div className="flex gap-0.5 flex-shrink-0">
-          {TIMEFRAMES.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTf(t)}
-              className="px-2 py-1 text-[11px] font-medium rounded transition-all duration-100"
-              style={{
-                background: t === tf ? "var(--bg-overlay)" : "transparent",
-                color: t === tf ? "var(--text-primary)" : "var(--text-tertiary)",
-                border: t === tf ? "1px solid var(--border-default)" : "1px solid transparent",
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#0d1117" }}>
+      <AssetBar mkt={mkt} />
+      <ChartToolbar tf={tf} onTf={setTf} />
+      {/* Chart fills remaining space */}
+      <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+        <ChartSVG />
       </div>
-
-      {/* ── Chart body ── */}
-      <div className="flex-1 min-h-0 relative">
-        <CandlestickChart />
+      {/* Timeframe bar */}
+      <div style={{
+        height: 28, display: "flex", alignItems: "center", background: "var(--surface)",
+        borderTop: "1px solid var(--b1)", padding: "0 10px", gap: 2, flexShrink: 0,
+      }}>
+        {TIMEFRAMES.map((t) => (
+          <button key={t} onClick={() => setTf(t)} style={{
+            padding: "2px 7px", borderRadius: 4, fontSize: 11, fontWeight: 500,
+            background: t === tf ? "var(--raised)" : "transparent",
+            color: t === tf ? "var(--t1)" : "var(--t3)",
+            border: "none", cursor: "pointer", transition: "all 0.1s",
+          }}>{t}</button>
+        ))}
+        <div style={{ width: 1, height: 12, background: "var(--b1)", margin: "0 4px" }} />
+        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>%</button>
+        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>log</button>
+        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>auto</button>
       </div>
     </div>
   );
