@@ -1,5 +1,5 @@
-export { Button } from "./Button";
-export { Input } from "./Input";
+export { Button } from "./button";
+export { Input } from "./input";
 export { Toggle } from "./Toggle";
-export { Slider } from "./Slider";
-export { Tabs } from "./Tabs";
+export { Slider } from "./slider";
+export { Tabs } from "./tabs";

@@ -46,7 +46,7 @@ interface PosEntry {
   isLong: boolean;
   unrealizedPnL: bigint;
   marginRatio: bigint;
-  position?: { marketId?: `0x${string}` };
+  position?: { assetId?: `0x${string}` } | undefined;
 }
 
 const TH: React.CSSProperties = {
@@ -62,7 +62,7 @@ const TD: React.CSSProperties = {
 function PositionRow({ pos }: { pos: PosEntry }) {
   const { str: pnlStr, isPositive } = formatPnl(pos.unrealizedPnL);
   const rawSize = pos.size < 0n ? -pos.size : pos.size;
-  const market = pos.position?.marketId ? formatMarketId(pos.position.marketId) : "—";
+  const market = pos.position?.assetId ? formatMarketId(pos.position.assetId) : "—";
   const [hovered, setHovered] = useState(false);
 
   return (

@@ -10,10 +10,11 @@ import { formatPrice } from "@/lib/format";
 type Direction = "long" | "short";
 type OrderType = "Market" | "Limit";
 
-const AVAILABLE_MARKETS = [
+type Market = { id: `0x${string}`; symbol: string; pair: string; color: string };
+const AVAILABLE_MARKETS: Market[] = [
   { id: MARKETS.XAU_USD, symbol: "XAU", pair: "XAU/USD", color: "#d4a017" },
   { id: MARKETS.SPX_USD, symbol: "SPX", pair: "SPX/USD", color: "#6366f1" },
-] as const;
+];
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
