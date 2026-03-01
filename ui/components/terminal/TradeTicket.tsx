@@ -72,6 +72,9 @@ export function TradeTicket() {
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
+  const { writeContract: writeApprove, data: approveTxHash, isPending: isApproving } = useWriteContract();
+  const { isLoading: isApproveConfirming } = useWaitForTransactionReceipt({ hash: approveTxHash });
+
   const { data: rawBalance } = useReadContract({
     address: CONTRACTS.usdc,
     abi: ERC20Abi,
@@ -80,17 +83,29 @@ export function TradeTicket() {
     query: { enabled: !!address, refetchInterval: 10000 },
   });
 
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: CONTRACTS.usdc,
+    abi: ERC20Abi,
+    functionName: "allowance",
+    args: address ? [address, CONTRACTS.perpEngine] : undefined,
+    query: { enabled: !!address, refetchInterval: 5000 },
+  });
+
   const balanceNum    = rawBalance ? Number(rawBalance as bigint) / 1e6 : 0;
   const collateralNum = parseFloat(collateral.replace(/,/g, "")) || 0;
   const posSize       = collateralNum * leverage;
   const fees          = posSize * 0.0005;
   const markStr       = marketInfo && marketInfo.markPrice > 0n ? formatPrice(marketInfo.markPrice) : "—";
   const isLong        = direction === "long";
-  const isBusy        = isPending || isConfirming;
-  const pct           = balanceNum > 0 ? Math.min((collateralNum / balanceNum) * 100, 100) : 0;
+
+  const requiredMargin = collateralNum > 0 ? parseUnits(collateralNum.toFixed(6), 6) : 0n;
+  const hasAllowance   = allowance !== undefined && (allowance as bigint) >= requiredMargin;
+  const needsApproval  = !!address && collateralNum > 0 && !hasAllowance;
+  const isApproveBusy  = isApproving || isApproveConfirming;
+  const isBusy         = isPending || isConfirming;
+  const pct            = balanceNum > 0 ? Math.min((collateralNum / balanceNum) * 100, 100) : 0;
 
   const accent     = isLong ? "var(--long)"       : "var(--short)";
-  const accentBtn  = isLong ? "var(--long-btn)"   : "var(--short-btn)";
   const accentMid  = isLong ? "var(--long-mid)"   : "var(--short-mid)";
   const accentDim  = isLong ? "var(--long-dim)"   : "var(--short-dim)";
   const accentGlow = isLong ? "var(--long-glow)"  : "var(--short-glow)";
@@ -106,6 +121,15 @@ export function TradeTicket() {
     setLeverage(next);
   };
 
+  const handleApprove = () => {
+    writeApprove({
+      address: CONTRACTS.usdc,
+      abi: ERC20Abi,
+      functionName: "approve",
+      args: [CONTRACTS.perpEngine, parseUnits("1000000", 6)],
+    });
+  };
+
   const handleTrade = () => {
     if (!address || !collateralNum) return;
     const margin = parseUnits(collateralNum.toFixed(6), 6);
@@ -118,7 +142,7 @@ export function TradeTicket() {
     });
   };
 
-  const canTrade = !!address && collateralNum > 0 && !isBusy;
+  const canTrade = !!address && collateralNum > 0 && !isBusy && !needsApproval;
   const isMaxLev = leverage === LEVERAGE_PRESETS[LEVERAGE_PRESETS.length - 1];
 
   return (
@@ -149,20 +173,19 @@ export function TradeTicket() {
         <div style={{ display: "flex", borderRadius: "var(--radius-lg)", overflow: "hidden", border: "1px solid var(--b2)" }}>
           {(["long", "short"] as Direction[]).map((d) => {
             const active = direction === d;
-            const dAccent = d === "long" ? "var(--long)" : "var(--short)";
-            const dBtn    = d === "long" ? "var(--long-btn)" : "var(--short-btn)";
-            const dGlow   = d === "long" ? "var(--long-glow)" : "var(--short-glow)";
+            const dAccent   = d === "long" ? "var(--long)"       : "var(--short)";
+            const dBg       = d === "long" ? "var(--long)"       : "var(--short)";
+            const dActiveBg = d === "long" ? "var(--long-active)": "var(--short-active)";
             return (
               <button key={d} onClick={() => setDirection(d)} style={{
                 flex: 1, height: 38, fontSize: "var(--text-sm)", fontWeight: 700,
-                letterSpacing: "0.05em", textTransform: "uppercase",
-                background: active ? dBtn : "transparent",
-                color: active ? dAccent : "var(--t3)",
+                letterSpacing: "0.04em", textTransform: "uppercase",
+                background: active ? dBg : dActiveBg,
+                color: active ? "#fff" : dAccent,
                 borderRight: d === "long" ? "1px solid var(--b2)" : "none",
-                position: "relative",
+                opacity: active ? 1 : 0.45,
                 transition: "var(--transition-fast)",
               }}>
-                {active && <span aria-hidden="true" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 20, height: 2, borderRadius: 1, background: dAccent, boxShadow: `0 0 6px ${dGlow}` }} />}
                 {d === "long" ? "▲ Long" : "▼ Short"}
               </button>
             );
@@ -206,7 +229,7 @@ export function TradeTicket() {
           fontSize: "var(--text-xs)", fontWeight: 700,
           color: isMaxLev ? "var(--warning)" : accent,
           border: `1px solid ${isMaxLev ? "var(--warning-dim)" : accentMid}`,
-          background: isMaxLev ? "var(--warning-dim)" : accentBtn,
+          background: isMaxLev ? "var(--warning-dim)" : accentDim,
           minWidth: 46, justifyContent: "center",
           transition: "var(--transition-fast)",
         }}>
@@ -352,7 +375,7 @@ export function TradeTicket() {
           <span style={{
             width: 15, height: 15, borderRadius: "var(--radius-sm)", flexShrink: 0,
             border: `1.5px solid ${tpsl ? accent : "var(--b3)"}`,
-            background: tpsl ? accentBtn : "transparent",
+            background: tpsl ? accentDim : "transparent",
             display: "flex", alignItems: "center", justifyContent: "center",
             transition: "var(--transition-fast)",
           }}>
@@ -402,7 +425,7 @@ export function TradeTicket() {
       </div>
 
       {/* ── 9. CTA button ── */}
-      <div style={{ padding: "var(--sp-3) var(--sp-3) 0" }}>
+      <div style={{ padding: "var(--sp-3) var(--sp-3) 0", display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
         {!address ? (
           <div style={{
             textAlign: "center", fontSize: "var(--text-sm)", color: "var(--t3)",
@@ -410,6 +433,27 @@ export function TradeTicket() {
           }}>
             Connect wallet to trade
           </div>
+        ) : needsApproval ? (
+          <button
+            onClick={handleApprove}
+            disabled={isApproveBusy}
+            style={{
+              width: "100%", height: "var(--h-btn-lg)", borderRadius: "var(--radius-lg)",
+              fontSize: "var(--text-sm)", fontWeight: 700, letterSpacing: "0.03em",
+              cursor: isApproveBusy ? "not-allowed" : "pointer",
+              background: "var(--gold)",
+              color: "#000",
+              border: "none",
+              transition: "var(--transition-medium)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+          >
+            {isApproveBusy && <Spinner />}
+            {isApproveBusy
+              ? (isApproveConfirming ? "Confirming approval…" : "Sign approval in wallet…")
+              : "Approve USDC to trade"
+            }
+          </button>
         ) : (
           <button
             onClick={handleTrade}
@@ -418,9 +462,10 @@ export function TradeTicket() {
               width: "100%", height: "var(--h-btn-lg)", borderRadius: "var(--radius-lg)",
               fontSize: "var(--text-sm)", fontWeight: 700, letterSpacing: "0.03em",
               cursor: canTrade ? "pointer" : "not-allowed",
-              background: canTrade ? accentBtn : "var(--raised)",
-              color: canTrade ? accent : "var(--t3)",
+              background: canTrade ? accent : "var(--raised)",
+              color: canTrade ? "#fff" : "var(--t3)",
               border: `1px solid ${canTrade ? accentMid : "var(--b1)"}`,
+              opacity: canTrade ? 1 : 0.6,
               transition: "var(--transition-medium)",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}

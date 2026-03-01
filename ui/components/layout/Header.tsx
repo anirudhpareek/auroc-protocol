@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { RefObject, ReactNode } from "react";
+import { Search, Bell, Menu, TrendingUp, Briefcase, ArrowLeftRight, Vault, Star } from "lucide-react";
 
 const WATCH_TOKENS = [
   { sym: "XAU", pair: "XAU/USD", price: "2,892.40", chg: "+0.45%", up: true,  color: "#d4a017" },
@@ -54,7 +55,7 @@ interface HeaderProps {
 
 export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
   const pathname = usePathname();
-  const isPerps = pathname === "/";
+  const isTrade = pathname === "/";
 
   return (
     <header style={{
@@ -87,9 +88,8 @@ export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
 
         {/* Nav */}
         <nav style={{ display: "flex", alignItems: "center", gap: 1 }} aria-label="Main navigation">
-          <NavLink label="Trade"     href="/"          active={pathname === "/" && false} />
+          <NavLink label="Trade"     href="/"          active={pathname === "/"} />
           <NavLink label="Portfolio" href="/portfolio" active={pathname === "/portfolio"} />
-          <NavLink label="Perps"     href="/"          active={pathname === "/"} />
           <NavLink label="Swap"      href="/swap"      active={pathname === "/swap"} />
           <NavLink label="Vault"     href="/vault"     active={pathname === "/vault"} />
         </nav>
@@ -119,10 +119,7 @@ export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
           color: "var(--t3)",
           transition: "border-color 0.15s, background-color 0.15s",
         }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-            <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M8.5 8.5L10.5 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-          </svg>
+          <Search size={12} aria-hidden="true" style={{ flexShrink: 0 }} />
           <input
             ref={searchRef}
             type="search"
@@ -164,10 +161,7 @@ export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
           color: "var(--t2)", border: "1px solid transparent",
           transition: "background-color 0.15s, border-color 0.15s",
         }}>
-          <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M7 1C4.79 1 3 2.79 3 5V8.5L1.5 10H12.5L11 8.5V5C11 2.79 9.21 1 7 1Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-            <path d="M5.5 10.5C5.5 11.33 6.17 12 7 12S8.5 11.33 8.5 10.5" stroke="currentColor" strokeWidth="1.2"/>
-          </svg>
+          <Bell size={14} aria-hidden="true" />
         </button>
 
         {/* Wallet */}
@@ -207,20 +201,8 @@ export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
         </ConnectButton.Custom>
       </div>
 
-      {/* ── Watchlist / Perps strip ── */}
-      {isPerps ? (
-        <div style={{
-          height: 30, display: "flex", alignItems: "center",
-          borderTop: "1px solid var(--b1)", background: "var(--bg)",
-          padding: "0 16px", justifyContent: "space-between",
-        }}>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>No tokens in your perpetuals watchlist</span>
-          <div style={{ display: "flex", gap: 10 }}>
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>$</span>
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>%</span>
-          </div>
-        </div>
-      ) : (
+      {/* ── Watchlist strip (non-Trade pages only) ── */}
+      {!isTrade && (
         <div style={{
           height: 30, display: "flex", alignItems: "center",
           borderTop: "1px solid var(--b1)", background: "var(--bg)",

@@ -4,6 +4,7 @@ import { useMarketData } from "@/hooks/useMarketData";
 import { formatPrice } from "@/lib/format";
 import { Regime } from "@/types";
 import { AVAILABLE_TERMINAL_MARKETS, useTerminal } from "./TerminalContext";
+import { AssetIcon } from "./AssetIcon";
 
 const MARKETS_CFG = [
   {
@@ -66,11 +67,7 @@ export function MarketTickerBar() {
                 transition: "var(--transition-fast)",
               }}
             >
-              <span style={{
-                width: 16, height: 16, borderRadius: "50%", background: m.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 7, fontWeight: 800, color: "#fff", flexShrink: 0,
-              }} aria-hidden="true">{m.symbol[0]}</span>
+              <AssetIcon symbol={m.symbol} color={m.color} size={16} />
               {m.pair}
             </button>
           );

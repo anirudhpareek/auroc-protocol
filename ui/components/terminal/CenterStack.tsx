@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Liveline } from "liveline";
+import dynamic from "next/dynamic";
 import type { CandlePoint, LivelinePoint } from "liveline";
 import { useTerminal } from "./TerminalContext";
+
+const Liveline = dynamic(
+  () => import("liveline").then((m) => ({ default: m.Liveline })),
+  {
+    ssr: false,
+    loading: () => <div style={{ width: "100%", height: "100%", background: "#0a0b0f" }} className="animate-shimmer" />,
+  }
+);
 
 const TIMEFRAMES = ["1m", "3m", "5m", "15m", "1H", "4H", "1D", "1W"] as const;
 
