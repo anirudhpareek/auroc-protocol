@@ -28,9 +28,9 @@ function CloseBtn({ positionId }: { positionId: `0x${string}` }) {
       disabled={busy}
       style={{
         padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
-        background: "rgba(239,68,68,0.10)", color: "var(--short)",
+        background: "var(--short-btn)", color: "var(--short)",
         border: "1px solid rgba(239,68,68,0.16)", cursor: busy ? "not-allowed" : "pointer",
-        opacity: busy ? 0.4 : 1, transition: "all 0.1s",
+        opacity: busy ? 0.4 : 1, transition: "background-color 0.1s, opacity 0.1s",
       }}
     >
       {busy ? "…" : "Close"}
@@ -80,7 +80,7 @@ function PositionRow({ pos }: { pos: PosEntry }) {
           }}>
             {pos.isLong ? "LONG" : "SHORT"}
           </span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "Inter, sans-serif" }}>{market}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t1)" }}>{market}</span>
           <span style={{ fontSize: 10, color: "var(--t3)" }}>{formatLeverage(pos.size, pos.margin)}</span>
         </div>
       </td>
@@ -122,8 +122,8 @@ export function PositionsPanel() {
                 style={{
                   padding: "0 12px", height: 36, fontSize: 11, fontWeight: active ? 500 : 400,
                   color: active ? "var(--t1)" : "var(--t3)",
-                  borderBottom: active ? "2px solid var(--t1)" : "2px solid transparent",
-                  background: "none", transition: "all 0.1s", display: "flex", alignItems: "center", gap: 5,
+                  borderBottom: active ? "2px solid var(--gold)" : "2px solid transparent",
+                  background: "none", transition: "color 0.1s, border-color 0.1s", display: "flex", alignItems: "center", gap: 5,
                 }}
               >
                 {t}

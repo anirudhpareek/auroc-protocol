@@ -5,7 +5,6 @@ import { MARKETS } from "@/lib/contracts";
 import { Regime } from "@/types";
 import { formatPrice } from "@/lib/format";
 
-/* ── Markets ── */
 const MARKETS_CFG = [
   {
     id: MARKETS.XAU_USD, sym: "XAU", pair: "XAU/USD", name: "Gold",
@@ -20,9 +19,9 @@ const MARKETS_CFG = [
 ] as const;
 type MktCfg = (typeof MARKETS_CFG)[number];
 
-const TIMEFRAMES = ["1m","3m","5m","15m","1H","4H","1D","1W"];
+const TIMEFRAMES = ["1m","3m","5m","15m","1H","4H","1D","1W"] as const;
 
-/* ── TradingView-style candlestick chart SVG ── */
+/* ── Static candlestick chart SVG ── */
 const CANDLES = [
   {o:2840,c:2858,h:2865,l:2832},{o:2858,c:2850,h:2868,l:2845},
   {o:2850,c:2871,h:2878,l:2848},{o:2871,c:2864,h:2880,l:2860},
@@ -49,274 +48,214 @@ function ChartSVG() {
   const n = CANDLES.length;
   const barW = cW / n;
   const bodyW = barW * 0.55;
-
   const prices = CANDLES.flatMap(c => [c.h, c.l]);
   const minP = Math.min(...prices) - 6;
   const maxP = Math.max(...prices) + 6;
   const pRange = maxP - minP;
-
   const maxV = Math.max(...VOLUMES);
-
   const toX = (i: number) => PAD.l + (i + 0.5) * barW;
   const toY = (p: number) => PAD.t + cH - ((p - minP) / pRange) * cH;
-  const toYV = (v: number) => H - PAD.b - (v / maxV) * VOL_H;
-
   const lastC = CANDLES[n - 1];
-  const lastPrice = lastC.c;
-  const lastY = toY(lastPrice);
-
-  /* Price labels on right axis */
+  const lastY = toY(lastC.c);
   const priceLabels = [0, 0.25, 0.5, 0.75, 1].map(t => minP + t * pRange);
 
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-      style={{ background: "#0d1117", display: "block" }}>
+      style={{ background: "#0a0b0f", display: "block" }}>
       <defs>
         <clipPath id="chartClip">
           <rect x={PAD.l} y={PAD.t} width={cW} height={cH + VOL_H} />
         </clipPath>
       </defs>
-
-      {/* Grid lines */}
       {[0,0.25,0.5,0.75,1].map((t,i) => (
-        <line key={i} x1={PAD.l} x2={W - PAD.r} y1={PAD.t + cH * t} y2={PAD.t + cH * t}
-          stroke="rgba(42,46,57,0.8)" strokeWidth="1" />
+        <line key={i} x1={PAD.l} x2={W-PAD.r} y1={PAD.t+cH*t} y2={PAD.t+cH*t} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
       ))}
       {[0,0.2,0.4,0.6,0.8,1].map((t,i) => (
-        <line key={i} x1={PAD.l + cW * t} x2={PAD.l + cW * t} y1={PAD.t} y2={H - PAD.b}
-          stroke="rgba(42,46,57,0.5)" strokeWidth="1" />
+        <line key={i} x1={PAD.l+cW*t} x2={PAD.l+cW*t} y1={PAD.t} y2={H-PAD.b} stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
       ))}
-
       <g clipPath="url(#chartClip)">
-        {/* Volume bars */}
-        {CANDLES.map((c, i) => {
+        {CANDLES.map((c,i) => {
           const up = c.c >= c.o;
           const vH = (VOLUMES[i] / maxV) * VOL_H;
-          return (
-            <rect key={`v${i}`}
-              x={toX(i) - bodyW / 2} y={H - PAD.b - vH}
-              width={bodyW} height={vH}
-              fill={up ? "rgba(38,166,154,0.35)" : "rgba(239,83,80,0.35)"}
-              rx="1"
-            />
-          );
+          return <rect key={`v${i}`} x={toX(i)-bodyW/2} y={H-PAD.b-vH} width={bodyW} height={vH} fill={up ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"} rx="1"/>;
         })}
-
-        {/* Candles */}
-        {CANDLES.map((c, i) => {
+        {CANDLES.map((c,i) => {
           const up = c.c >= c.o;
-          const upColor = "#26a69a";
-          const dnColor = "#ef5350";
-          const color = up ? upColor : dnColor;
+          const color = up ? "#26a69a" : "#ef5350";
           const bTop = toY(Math.max(c.o, c.c));
-          const bBot = toY(Math.min(c.o, c.c));
-          const bH = Math.max(bBot - bTop, 1);
+          const bH = Math.max(toY(Math.min(c.o, c.c)) - bTop, 1);
           return (
             <g key={i}>
-              <line x1={toX(i)} y1={toY(c.h)} x2={toX(i)} y2={toY(c.l)}
-                stroke={color} strokeWidth="1" />
-              <rect x={toX(i) - bodyW / 2} y={bTop} width={bodyW} height={bH}
-                fill={color} rx="0.5" />
+              <line x1={toX(i)} y1={toY(c.h)} x2={toX(i)} y2={toY(c.l)} stroke={color} strokeWidth="1"/>
+              <rect x={toX(i)-bodyW/2} y={bTop} width={bodyW} height={bH} fill={color} rx="0.5"/>
             </g>
           );
         })}
       </g>
-
-      {/* Current price dashed line */}
-      <line x1={PAD.l} y1={lastY} x2={W - PAD.r} y2={lastY}
-        stroke="#ef5350" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.7" />
-
-      {/* Price axis labels */}
-      {priceLabels.map((p, i) => (
-        <text key={i} x={W - PAD.r + 6} y={PAD.t + cH - ((p - minP) / pRange) * cH + 4}
-          fill="rgba(178,181,190,0.7)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+      <line x1={PAD.l} y1={lastY} x2={W-PAD.r} y2={lastY} stroke="#ef5350" strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6"/>
+      {priceLabels.map((p,i) => (
+        <text key={i} x={W-PAD.r+6} y={PAD.t+cH-((p-minP)/pRange)*cH+4} fill="rgba(200,200,210,0.5)" fontSize="9" fontFamily="JetBrains Mono, monospace">
           {p.toFixed(0)}
         </text>
       ))}
-
-      {/* Current price label box */}
-      <rect x={W - PAD.r + 1} y={lastY - 8} width={PAD.r - 2} height={16}
-        fill="#ef5350" rx="2" />
-      <text x={W - PAD.r + PAD.r / 2} y={lastY + 4} textAnchor="middle"
-        fill="#fff" fontSize="9" fontWeight="600" fontFamily="JetBrains Mono, monospace">
-        {lastPrice.toFixed(2)}
+      <rect x={W-PAD.r+1} y={lastY-8} width={PAD.r-2} height={16} fill="#ef5350" rx="2"/>
+      <text x={W-PAD.r+PAD.r/2} y={lastY+4} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600" fontFamily="JetBrains Mono, monospace">
+        {lastC.c.toFixed(2)}
       </text>
-
-      {/* Time labels */}
-      {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
-        const idx = Math.floor(t * (n - 1));
-        const hours = 9 + Math.floor(idx * 6.5 / n);
-        const mins = Math.floor((idx * 390 / n) % 60);
+      {[0,0.25,0.5,0.75,1].map((t,i) => {
+        const idx = Math.floor(t*(n-1));
+        const hours = 9 + Math.floor(idx*6.5/n);
+        const mins  = Math.floor((idx*390/n)%60);
         return (
-          <text key={i} x={PAD.l + cW * t} y={H - PAD.b + 13}
-            textAnchor="middle" fill="rgba(178,181,190,0.6)" fontSize="8.5"
-            fontFamily="JetBrains Mono, monospace">
+          <text key={i} x={PAD.l+cW*t} y={H-PAD.b+13} textAnchor="middle" fill="rgba(200,200,210,0.4)" fontSize="8.5" fontFamily="JetBrains Mono, monospace">
             {`${hours.toString().padStart(2,"0")}:${mins.toString().padStart(2,"0")}`}
           </text>
         );
       })}
-
-      {/* OHLC header */}
-      <text x={PAD.l + 4} y={PAD.t + 14} fill="rgba(178,181,190,0.8)" fontSize="9.5" fontFamily="JetBrains Mono, monospace">
-        {`O ${CANDLES[n-1].o}  H ${CANDLES[n-1].h}  L ${CANDLES[n-1].l}  C ${CANDLES[n-1].c}  ${lastC.c > lastC.o ? "+" : ""}${(lastC.c - lastC.o).toFixed(0)}`}
+      <text x={PAD.l+4} y={PAD.t+14} fill="rgba(200,200,210,0.6)" fontSize="9.5" fontFamily="JetBrains Mono, monospace">
+        {`O ${CANDLES[n-1].o}  H ${CANDLES[n-1].h}  L ${CANDLES[n-1].l}  C ${CANDLES[n-1].c}`}
       </text>
-
-      {/* Watermark */}
-      <text x={W / 2} y={H / 2 + 20} textAnchor="middle"
-        fill="rgba(255,255,255,0.025)" fontSize="28" fontWeight="700"
-        fontFamily="Inter, sans-serif" letterSpacing="4">
+      <text x={W/2} y={H/2+20} textAnchor="middle" fill="rgba(255,255,255,0.018)" fontSize="28" fontWeight="700" fontFamily="Outfit, sans-serif" letterSpacing="4">
         AUROC
       </text>
     </svg>
   );
 }
 
+/* ── Toolbar button ── */
+function ToolBtn({ children, label, active, onClick }: { children: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "0 8px", height: "100%", cursor: "pointer", gap: 4, flexShrink: 0,
+        color: active ? "var(--t1)" : "var(--t2)",
+        background: active ? "var(--active)" : "transparent",
+        borderRight: "1px solid var(--b1)",
+        transition: "color 0.1s, background-color 0.1s",
+        fontSize: "var(--text-xs)",
+      }}
+    >{children}</button>
+  );
+}
+
 /* ── Chart toolbar (TradingView-style) ── */
 function ChartToolbar({ tf, onTf }: { tf: string; onTf: (t: string) => void }) {
-  const btnS: React.CSSProperties = {
-    display: "flex", alignItems: "center", justifyContent: "center",
-    padding: "0 8px", height: "100%", fontSize: 11, color: "var(--t2)",
-    borderRight: "1px solid var(--b1)", cursor: "pointer", gap: 4, flexShrink: 0,
-    transition: "color 0.1s",
-  };
+  const [activeTool, setActiveTool] = useState<string | null>("cursor");
+
+  const tools: Array<{ key: string; label: string; icon: React.ReactNode }> = [
+    { key: "cursor",     label: "Cursor",     icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L7 10L8.5 7L11.5 6L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg> },
+    { key: "trend",      label: "Trend line", icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1.5" y1="10.5" x2="10.5" y2="1.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="2" cy="10" r="1.3" fill="currentColor"/><circle cx="10" cy="2" r="1.3" fill="currentColor"/></svg> },
+    { key: "hline",      label: "Horizontal line", icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="6" cy="6" r="1.3" fill="currentColor"/></svg> },
+    { key: "indicators", label: "Indicators", icon: <><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 8L3 5L5.5 7L8.5 3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Indicators</span></> },
+  ];
+
   return (
-    <div style={{
-      height: 34, display: "flex", alignItems: "center", background: "var(--surface)",
-      borderBottom: "1px solid var(--b1)", overflow: "hidden",
-    }}>
-      {/* Timeframe */}
-      <div style={{ ...btnS, color: "var(--t1)", fontWeight: 600, fontSize: 11 }}>{tf}
-        <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1L4 4L7 1" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round"/></svg>
-      </div>
-      {/* Cursor */}
-      <div style={btnS}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L7 10L8 7L11 6L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg>
-      </div>
-      {/* Indicators */}
-      <div style={{ ...btnS, gap: 5 }}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M1 8L3.5 5L6 7L9 3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span>Indicators</span>
-      </div>
-      {/* Layout */}
-      <div style={btnS}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
-          <rect x="6" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
-          <rect x="1" y="6" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
-          <rect x="6" y="6" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.1"/>
-        </svg>
-      </div>
-      {/* Nav */}
-      <div style={btnS}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7 2L3 5.5L7 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-      </div>
-      <div style={btnS}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M4 2L8 5.5L4 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-      </div>
+    <div style={{ height: "var(--h-toolbar)", display: "flex", alignItems: "stretch", background: "var(--surface)", borderBottom: "1px solid var(--b1)", overflow: "hidden" }}>
+      {/* Timeframe dropdown */}
+      <ToolBtn label={`Timeframe ${tf}`} active onClick={() => {}}>
+        <span style={{ fontWeight: 600, fontSize: "var(--text-xs)" }}>{tf}</span>
+        <svg width="7" height="5" viewBox="0 0 7 5" fill="none" aria-hidden="true"><path d="M1 1L3.5 4L6 1" stroke="var(--t3)" strokeWidth="1.1" strokeLinecap="round"/></svg>
+      </ToolBtn>
+
+      {tools.map(t => (
+        <ToolBtn key={t.key} label={t.label} active={activeTool === t.key} onClick={() => setActiveTool(t.key === activeTool ? null : t.key)}>
+          {t.icon}
+        </ToolBtn>
+      ))}
 
       <div style={{ flex: 1 }} />
 
-      {/* Source */}
-      <div style={{ ...btnS, color: "var(--t1)", fontWeight: 600 }}>
-        Auroc
-        <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1L4 4L7 1" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round"/></svg>
-      </div>
-      {/* Settings */}
-      <div style={btnS}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      {/* Right side controls */}
+      <ToolBtn label="Chart settings" onClick={() => {}}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.1"/>
           <path d="M6 1V2.5M6 9.5V11M1 6H2.5M9.5 6H11M2.64 2.64L3.7 3.7M8.3 8.3L9.36 9.36M9.36 2.64L8.3 3.7M3.7 8.3L2.64 9.36" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
         </svg>
-      </div>
-      {/* Expand */}
-      <div style={btnS}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M7.5 1.5H10.5V4.5M4.5 10.5H1.5V7.5M10.5 7.5V10.5H7.5M1.5 4.5V1.5H4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+      </ToolBtn>
+      <ToolBtn label="Fullscreen" onClick={() => {}}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M7 1.5H10.5V5M4.5 10.5H1V7M10.5 7V10.5H7M1 5V1.5H4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-      </div>
-      {/* Camera */}
-      <div style={{ ...btnS, borderRight: "none" }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      </ToolBtn>
+      <ToolBtn label="Screenshot" onClick={() => {}}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style={{ borderRight: "none" }}>
           <rect x="1" y="3.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.1"/>
           <circle cx="6" cy="7" r="2" stroke="currentColor" strokeWidth="1.1"/>
           <path d="M4 3.5L4.5 2H7.5L8 3.5" stroke="currentColor" strokeWidth="1.1"/>
         </svg>
-      </div>
+      </ToolBtn>
     </div>
   );
 }
 
-/* ── Asset info bar (Trojan-style) ── */
+/* ── Asset info bar ── */
 function AssetBar({ mkt }: { mkt: MktCfg }) {
   const { marketInfo } = useMarketData(mkt.id);
-  const markStr = marketInfo && marketInfo.markPrice > 0n
-    ? formatPrice(marketInfo.markPrice) : "2,892.40";
-
-  const sep = <div style={{ width: 1, height: 24, background: "var(--b1)", flexShrink: 0 }} />;
+  const markStr = marketInfo && marketInfo.markPrice > 0n ? formatPrice(marketInfo.markPrice) : "2,892.40";
+  const sep = <div aria-hidden="true" style={{ width: 1, height: 22, background: "var(--b1)", flexShrink: 0 }} />;
 
   return (
     <div style={{
-      height: 44, display: "flex", alignItems: "center", gap: 16,
+      height: "var(--h-assetbar)", display: "flex", alignItems: "center", gap: 14,
       padding: "0 14px", background: "var(--surface)", borderBottom: "1px solid var(--b1)",
       flexShrink: 0, overflow: "hidden",
+      boxShadow: "inset 0 1px 0 rgba(245,200,66,0.07)",
     }}>
-      {/* Star */}
-      <button style={{ color: "var(--t3)", fontSize: 16, flexShrink: 0 }}>☆</button>
+      {/* Favourite */}
+      <button aria-label="Add to watchlist" style={{ color: "var(--t3)", fontSize: 15, flexShrink: 0, transition: "color 0.1s" }}>☆</button>
 
       {/* Market selector */}
-      <button style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
-        <div style={{ width: 22, height: 22, borderRadius: "50%", background: mkt.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>{mkt.sym[0]}</div>
-        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--t1)" }}>{mkt.sym}</span>
-        <svg width="9" height="6" viewBox="0 0 9 6" fill="none"><path d="M1 1L4.5 5L8 1" stroke="var(--t2)" strokeWidth="1.3" strokeLinecap="round"/></svg>
+      <button style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0, transition: "opacity 0.1s" }} aria-label={`Current market: ${mkt.pair}. Click to change.`}>
+        <span style={{ width: 22, height: 22, borderRadius: "50%", background: mkt.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff", flexShrink: 0 }} aria-hidden="true">{mkt.sym[0]}</span>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--t1)", letterSpacing: "-0.02em" }}>{mkt.sym}</span>
+        <svg width="9" height="6" viewBox="0 0 9 6" fill="none" aria-hidden="true"><path d="M1 1L4.5 5L8 1" stroke="var(--t2)" strokeWidth="1.3" strokeLinecap="round"/></svg>
       </button>
 
       {/* Price */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span className="tabular" style={{ fontSize: 16, fontWeight: 700, color: "var(--t1)", letterSpacing: "-0.03em" }}>${markStr}</span>
-        <span style={{ fontSize: 12, fontWeight: 500, color: mkt.changeUp ? "var(--long)" : "var(--short)" }}>{mkt.change}</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+        <span className="tabular" style={{ fontSize: 18, fontWeight: 700, color: "var(--t1)", letterSpacing: "-0.04em" }}>${markStr}</span>
+        <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: mkt.changeUp ? "var(--long)" : "var(--short)" }}>{mkt.change}</span>
       </div>
 
       {sep}
-
-      {/* Oracle */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11, color: "var(--t3)" }}>Oracle Price</span>
-        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.oracleStr}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span className="label-upper">Oracle</span>
+        <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}>{mkt.oracleStr}</span>
       </div>
-
       {sep}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11, color: "var(--t3)" }}>24h Volume</span>
-        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.vol}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span className="label-upper">24h Vol</span>
+        <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}>{mkt.vol}</span>
       </div>
-
       {sep}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11, color: "var(--t3)" }}>Open Interest</span>
-        <span className="tabular" style={{ fontSize: 11, color: "var(--t2)" }}>{mkt.oi}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span className="label-upper">Open Interest</span>
+        <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}>{mkt.oi}</span>
       </div>
-
       {sep}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11, color: "var(--t3)" }}>Funding / Countdown</span>
-        <span className="tabular" style={{ fontSize: 11, color: mkt.fundingUp ? "var(--long)" : "var(--short)" }}>{mkt.funding}</span>
-        <span className="tabular" style={{ fontSize: 11, color: "var(--t3)" }}>03:42:18</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span className="label-upper">Funding</span>
+        <span className="tabular" style={{ fontSize: "var(--text-xs)", color: mkt.fundingUp ? "var(--long)" : "var(--short)" }}>{mkt.funding}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span className="label-upper" style={{ opacity: 0 }}>—</span>
+        <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>03:42:18</span>
       </div>
 
       <div style={{ flex: 1 }} />
 
-      {/* Regime */}
       {marketInfo && (
         <div style={{
-          padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+          padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "var(--text-2xs)", fontWeight: 700,
           background: marketInfo.regime === Regime.OPEN ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
           color: marketInfo.regime === Regime.OPEN ? "var(--long)" : "var(--warning)",
           border: `1px solid ${marketInfo.regime === Regime.OPEN ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
+          letterSpacing: "0.06em",
         }}>
           {marketInfo.regime === Regime.OPEN ? "● OPEN" : "● OFF-HOURS"}
         </div>
@@ -330,30 +269,31 @@ export function ChartPanel() {
   const [tf, setTf]   = useState("15m");
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#0d1117" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#0a0b0f" }}>
       <AssetBar mkt={mkt} />
       <ChartToolbar tf={tf} onTf={setTf} />
-      {/* Chart fills remaining space */}
       <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
         <ChartSVG />
       </div>
       {/* Timeframe bar */}
       <div style={{
-        height: 28, display: "flex", alignItems: "center", background: "var(--surface)",
-        borderTop: "1px solid var(--b1)", padding: "0 10px", gap: 2, flexShrink: 0,
+        height: 28, display: "flex", alignItems: "center",
+        background: "var(--surface)", borderTop: "1px solid var(--b1)",
+        padding: "0 10px", gap: 2, flexShrink: 0,
       }}>
         {TIMEFRAMES.map((t) => (
-          <button key={t} onClick={() => setTf(t)} style={{
-            padding: "2px 7px", borderRadius: 4, fontSize: 11, fontWeight: 500,
+          <button key={t} type="button" onClick={() => setTf(t)} style={{
+            padding: "2px 7px", borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", fontWeight: t === tf ? 600 : 400,
             background: t === tf ? "var(--raised)" : "transparent",
             color: t === tf ? "var(--t1)" : "var(--t3)",
-            border: "none", cursor: "pointer", transition: "all 0.1s",
+            border: t === tf ? "1px solid var(--b2)" : "1px solid transparent",
+            transition: "var(--transition-fast)",
           }}>{t}</button>
         ))}
-        <div style={{ width: 1, height: 12, background: "var(--b1)", margin: "0 4px" }} />
-        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>%</button>
-        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>log</button>
-        <button style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, color: "var(--t3)" }}>auto</button>
+        <div aria-hidden="true" style={{ width: 1, height: 12, background: "var(--b1)", margin: "0 4px" }} />
+        <button type="button" aria-label="Toggle percentage scale" style={{ padding: "2px 6px", borderRadius: "var(--radius-sm)", fontSize: "var(--text-2xs)", color: "var(--t3)", transition: "color 0.1s" }}>%</button>
+        <button type="button" aria-label="Toggle log scale"        style={{ padding: "2px 6px", borderRadius: "var(--radius-sm)", fontSize: "var(--text-2xs)", color: "var(--t3)", transition: "color 0.1s" }}>log</button>
+        <button type="button" aria-label="Toggle auto scale"       style={{ padding: "2px 6px", borderRadius: "var(--radius-sm)", fontSize: "var(--text-2xs)", color: "var(--t3)", transition: "color 0.1s" }}>auto</button>
       </div>
     </div>
   );

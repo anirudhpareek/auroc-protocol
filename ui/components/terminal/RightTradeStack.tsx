@@ -1,6 +1,5 @@
 "use client";
 
-import { InstrumentCard } from "./InstrumentCard";
 import { TradeTicket } from "./TradeTicket";
 
 export function RightTradeStack() {
@@ -12,11 +11,7 @@ export function RightTradeStack() {
       height: "100%",
       background: "var(--panel)",
     }}>
-      <InstrumentCard />
-      <div style={{ height: 1, background: "var(--b1)", flexShrink: 0 }} />
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-        <TradeTicket />
-      </div>
+      <TradeTicket />
     </div>
   );
 }

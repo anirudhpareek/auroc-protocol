@@ -4,14 +4,14 @@ import { useEffect, useRef } from "react";
 import { Header } from "@/components/layout/Header";
 import { StatusBar } from "@/components/layout/StatusBar";
 import { TerminalProvider, useTerminal, type Density } from "./TerminalContext";
-import { TopTickerStrip } from "./TopTickerStrip";
-import { LeftSidebar } from "./LeftSidebar";
+import { MarketTickerBar } from "./MarketTickerBar";
 import { CenterStack } from "./CenterStack";
+import { OrderBook } from "./OrderBook";
 import { RightTradeStack } from "./RightTradeStack";
 import { BottomDockTabs } from "./BottomDockTabs";
 
 function TerminalKeyboardHandler() {
-  const { searchRef, setSidebarOpen, setBottomTab } = useTerminal();
+  const { searchRef, setBottomTab } = useTerminal();
   const lastKeyRef = useRef<{ key: string; time: number } | null>(null);
 
   useEffect(() => {
@@ -19,14 +19,12 @@ function TerminalKeyboardHandler() {
       const target = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
 
-      // `/` → focus search
       if (e.key === "/") {
         e.preventDefault();
         searchRef.current?.focus();
         return;
       }
 
-      // `g` sequence
       const now = Date.now();
       if (e.key === "g") {
         lastKeyRef.current = { key: "g", time: now };
@@ -34,13 +32,13 @@ function TerminalKeyboardHandler() {
       }
 
       if (lastKeyRef.current?.key === "g" && now - lastKeyRef.current.time < 600) {
-        if (e.key === "t") {
-          setSidebarOpen(true);
+        if (e.key === "p") {
+          setBottomTab("Positions");
           lastKeyRef.current = null;
           return;
         }
-        if (e.key === "p") {
-          setBottomTab("Positions");
+        if (e.key === "o") {
+          setBottomTab("Active Orders");
           lastKeyRef.current = null;
           return;
         }
@@ -51,7 +49,7 @@ function TerminalKeyboardHandler() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [searchRef, setSidebarOpen, setBottomTab]);
+  }, [searchRef, setBottomTab]);
 
   return null;
 }
@@ -87,25 +85,12 @@ function DensityToggle() {
   );
 }
 
-function ResponsiveSidebarCollapse() {
-  const { setSidebarOpen } = useTerminal();
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 900px)");
-    const handler = (e: MediaQueryListEvent | MediaQueryList) => setSidebarOpen(!e.matches);
-    handler(mq);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, [setSidebarOpen]);
-  return null;
-}
-
 function TerminalInner() {
   const { density, searchRef } = useTerminal();
 
   return (
     <>
       <TerminalKeyboardHandler />
-      <ResponsiveSidebarCollapse />
       <div
         data-density={density}
         style={{
@@ -117,12 +102,12 @@ function TerminalInner() {
         }}
       >
         <Header searchRef={searchRef} densityToggle={<DensityToggle />} />
-        <TopTickerStrip />
+        <MarketTickerBar />
 
         {/* Main body row */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-          <LeftSidebar />
           <CenterStack />
+          <OrderBook />
           <RightTradeStack />
         </div>
 

@@ -130,6 +130,10 @@
   --fw-semibold: 600;
   --fw-bold:     700;
 
+  /* ─── Candle colors ─── */
+  --candle-bull: #26a69a;
+  --candle-bear: #ef5350;
+
   /* ─── Extra border token ─── */
   --border-faint: rgba(255,255,255,0.05);
 

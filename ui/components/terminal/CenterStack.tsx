@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Liveline } from "liveline";
+import type { CandlePoint, LivelinePoint } from "liveline";
 import { useTerminal } from "./TerminalContext";
-import { MarketHeaderBar } from "./MarketHeaderBar";
 
-const TIMEFRAMES = ["1m","3m","5m","15m","1H","4H","1D","1W"] as const;
+const TIMEFRAMES = ["1m", "3m", "5m", "15m", "1H", "4H", "1D", "1W"] as const;
 
-const CANDLES = [
+// Static OHLC data — replace with live feed when available
+const CANDLES_RAW = [
   {o:2840,c:2858,h:2865,l:2832},{o:2858,c:2850,h:2868,l:2845},
   {o:2850,c:2871,h:2878,l:2848},{o:2871,c:2864,h:2880,l:2860},
   {o:2864,c:2882,h:2890,l:2862},{o:2882,c:2875,h:2888,l:2870},
@@ -22,7 +24,24 @@ const CANDLES = [
   {o:2894,c:2885,h:2900,l:2882},{o:2885,c:2892,h:2896,l:2880},
   {o:2892,c:2906,h:2912,l:2890},{o:2906,c:2892,h:2910,l:2888},
 ];
-const VOLUMES = [1.2,0.8,1.5,0.9,1.8,1.1,2.1,1.3,1.6,0.7,2.4,1.0,1.9,0.8,2.2,1.4,1.7,0.9,2.0,1.2,2.3,1.1,3.1,1.8,1.4,1.0,1.6,1.3];
+
+const INTERVAL = 900; // 15 min in seconds
+const BASE_TIME = 1740000000;
+
+const CANDLE_POINTS: CandlePoint[] = CANDLES_RAW.map((c, i) => ({
+  time: BASE_TIME + i * INTERVAL,
+  open: c.o,
+  high: c.h,
+  low: c.l,
+  close: c.c,
+}));
+
+const TICK_DATA: LivelinePoint[] = CANDLES_RAW.map((c, i) => ({
+  time: BASE_TIME + i * INTERVAL + INTERVAL - 1,
+  value: c.c,
+}));
+
+const LIVE_VALUE = CANDLES_RAW[CANDLES_RAW.length - 1].c;
 
 const TAPE_TRADES = [
   { time:"09:41:03", isLong:true,  price:"2,941.50", size:"0.82" },
@@ -47,87 +66,11 @@ const TAPE_TRADES = [
   { time:"09:40:23", isLong:true,  price:"2,944.80", size:"0.70" },
 ];
 
-function ChartSVG() {
-  const W = 900, H = 280, PAD = { t: 8, r: 68, b: 24, l: 4 };
-  const VOL_H = 40;
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b - VOL_H;
-  const n = CANDLES.length;
-  const barW = cW / n;
-  const bodyW = barW * 0.55;
-  const prices = CANDLES.flatMap(c => [c.h, c.l]);
-  const minP = Math.min(...prices) - 6;
-  const maxP = Math.max(...prices) + 6;
-  const pRange = maxP - minP;
-  const maxV = Math.max(...VOLUMES);
-  const toX = (i: number) => PAD.l + (i + 0.5) * barW;
-  const toY = (p: number) => PAD.t + cH - ((p - minP) / pRange) * cH;
-  const lastC = CANDLES[n - 1];
-  const lastY = toY(lastC.c);
-  const priceLabels = [0, 0.25, 0.5, 0.75, 1].map(t => minP + t * pRange);
-
-  return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-      style={{ background: "#0a0b0f", display: "block" }}>
-      <defs>
-        <clipPath id="chartClip2">
-          <rect x={PAD.l} y={PAD.t} width={cW} height={cH + VOL_H} />
-        </clipPath>
-      </defs>
-      {[0,0.25,0.5,0.75,1].map((t,i) => (
-        <line key={i} x1={PAD.l} x2={W-PAD.r} y1={PAD.t+cH*t} y2={PAD.t+cH*t} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-      ))}
-      {[0,0.2,0.4,0.6,0.8,1].map((t,i) => (
-        <line key={i} x1={PAD.l+cW*t} x2={PAD.l+cW*t} y1={PAD.t} y2={H-PAD.b} stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
-      ))}
-      <g clipPath="url(#chartClip2)">
-        {CANDLES.map((c,i) => {
-          const up = c.c >= c.o;
-          const vH = (VOLUMES[i] / maxV) * VOL_H;
-          return <rect key={`v${i}`} x={toX(i)-bodyW/2} y={H-PAD.b-vH} width={bodyW} height={vH} fill={up ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"} rx="1"/>;
-        })}
-        {CANDLES.map((c,i) => {
-          const up = c.c >= c.o;
-          const color = up ? "#26a69a" : "#ef5350";
-          const bTop = toY(Math.max(c.o, c.c));
-          const bH = Math.max(toY(Math.min(c.o, c.c)) - bTop, 1);
-          return (
-            <g key={i}>
-              <line x1={toX(i)} y1={toY(c.h)} x2={toX(i)} y2={toY(c.l)} stroke={color} strokeWidth="1"/>
-              <rect x={toX(i)-bodyW/2} y={bTop} width={bodyW} height={bH} fill={color} rx="0.5"/>
-            </g>
-          );
-        })}
-      </g>
-      <line x1={PAD.l} y1={lastY} x2={W-PAD.r} y2={lastY} stroke="#ef5350" strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6"/>
-      {priceLabels.map((p,i) => (
-        <text key={i} x={W-PAD.r+6} y={PAD.t+cH-((p-minP)/pRange)*cH+4} fill="rgba(200,200,210,0.5)" fontSize="9" fontFamily="JetBrains Mono, monospace">
-          {p.toFixed(0)}
-        </text>
-      ))}
-      <rect x={W-PAD.r+1} y={lastY-8} width={PAD.r-2} height={16} fill="#ef5350" rx="2"/>
-      <text x={W-PAD.r+PAD.r/2} y={lastY+4} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600" fontFamily="JetBrains Mono, monospace">
-        {lastC.c.toFixed(2)}
-      </text>
-      {[0,0.25,0.5,0.75,1].map((t,i) => {
-        const idx = Math.floor(t*(n-1));
-        const hours = 9 + Math.floor(idx*6.5/n);
-        const mins  = Math.floor((idx*390/n)%60);
-        return (
-          <text key={i} x={PAD.l+cW*t} y={H-PAD.b+13} textAnchor="middle" fill="rgba(200,200,210,0.4)" fontSize="8.5" fontFamily="JetBrains Mono, monospace">
-            {`${hours.toString().padStart(2,"0")}:${mins.toString().padStart(2,"0")}`}
-          </text>
-        );
-      })}
-      <text x={PAD.l+4} y={PAD.t+14} fill="rgba(200,200,210,0.6)" fontSize="9.5" fontFamily="JetBrains Mono, monospace">
-        {`O ${CANDLES[n-1].o}  H ${CANDLES[n-1].h}  L ${CANDLES[n-1].l}  C ${CANDLES[n-1].c}`}
-      </text>
-      <text x={W/2} y={H/2+20} textAnchor="middle" fill="rgba(255,255,255,0.018)" fontSize="28" fontWeight="700" fontFamily="Outfit, sans-serif" letterSpacing="4">
-        AUROC
-      </text>
-    </svg>
-  );
-}
+const DRAW_TOOLS = [
+  { key: "cursor",  label: "Cursor",         icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L7 10L8.5 7L11.5 6L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg> },
+  { key: "trend",   label: "Trend line",      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1.5" y1="10.5" x2="10.5" y2="1.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="2" cy="10" r="1.3" fill="currentColor"/><circle cx="10" cy="2" r="1.3" fill="currentColor"/></svg> },
+  { key: "hline",   label: "Horizontal line", icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="6" cy="6" r="1.3" fill="currentColor"/></svg> },
+];
 
 function ToolBtn({ children, label, active, onClick }: { children: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
   return (
@@ -138,7 +81,7 @@ function ToolBtn({ children, label, active, onClick }: { children: React.ReactNo
       onClick={onClick}
       style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "0 8px", height: "100%", cursor: "pointer", gap: 4, flexShrink: 0,
+        padding: "0 8px", height: "100%", gap: 4, flexShrink: 0,
         color: active ? "var(--t1)" : "var(--t2)",
         background: active ? "var(--active)" : "transparent",
         borderRight: "1px solid var(--b1)",
@@ -148,12 +91,6 @@ function ToolBtn({ children, label, active, onClick }: { children: React.ReactNo
     >{children}</button>
   );
 }
-
-const DRAW_TOOLS = [
-  { key: "cursor",     label: "Cursor",          icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L7 10L8.5 7L11.5 6L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg> },
-  { key: "trend",      label: "Trend line",       icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1.5" y1="10.5" x2="10.5" y2="1.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="2" cy="10" r="1.3" fill="currentColor"/><circle cx="10" cy="2" r="1.3" fill="currentColor"/></svg> },
-  { key: "hline",      label: "Horizontal line",  icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><circle cx="6" cy="6" r="1.3" fill="currentColor"/></svg> },
-];
 
 function TapePanel({ visible }: { visible: boolean }) {
   if (!visible) return null;
@@ -165,7 +102,6 @@ function TapePanel({ visible }: { visible: boolean }) {
       overflowX: "auto", overflowY: "hidden",
     }}>
       <div style={{ display: "flex", alignItems: "stretch", height: "100%", width: "max-content" }}>
-        {/* Header col */}
         <div style={{
           width: 56, flexShrink: 0, borderRight: "1px solid var(--b1)",
           display: "flex", flexDirection: "column", justifyContent: "center",
@@ -194,22 +130,18 @@ function TapePanel({ visible }: { visible: boolean }) {
 }
 
 export function CenterStack() {
-  const { activeDrawTool, setActiveDrawTool } = useTerminal();
+  const { activeDrawTool, setActiveDrawTool, market } = useTerminal();
   const [tf, setTf] = useState("15m");
   const [tapeVisible, setTapeVisible] = useState(false);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "#0a0b0f" }}>
-      {/* Market header bar */}
-      <MarketHeaderBar />
-
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--bg)" }}>
       {/* Sub-toolbar: timeframes + drawing tools + scale buttons */}
       <div style={{
         height: "var(--h-toolbar)", display: "flex", alignItems: "stretch",
         background: "var(--surface)", borderBottom: "1px solid var(--b1)",
         overflow: "hidden", flexShrink: 0,
       }}>
-        {/* Timeframes */}
         {(TIMEFRAMES as readonly string[]).map((t) => (
           <ToolBtn key={t} label={`Timeframe ${t}`} active={tf === t} onClick={() => setTf(t)}>
             <span style={{ fontWeight: tf === t ? 600 : 400, fontSize: "var(--text-xs)" }}>{t}</span>
@@ -218,7 +150,6 @@ export function CenterStack() {
 
         <div aria-hidden="true" style={{ width: 1, background: "var(--b1)", margin: "6px 0", flexShrink: 0 }} />
 
-        {/* Drawing tools */}
         {DRAW_TOOLS.map((tool) => (
           <ToolBtn
             key={tool.key}
@@ -232,7 +163,6 @@ export function CenterStack() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Scale buttons */}
         <ToolBtn label="Toggle percentage scale" onClick={() => {}}>
           <span style={{ fontSize: "var(--text-2xs)" }}>%</span>
         </ToolBtn>
@@ -245,7 +175,6 @@ export function CenterStack() {
 
         <div aria-hidden="true" style={{ width: 1, background: "var(--b1)", margin: "6px 0", flexShrink: 0 }} />
 
-        {/* Tape toggle */}
         <ToolBtn label="Toggle tape" active={tapeVisible} onClick={() => setTapeVisible(v => !v)}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <rect x="1" y="2" width="10" height="1.5" rx="0.5" fill="currentColor"/>
@@ -255,7 +184,6 @@ export function CenterStack() {
           <span style={{ fontSize: "var(--text-2xs)" }}>Tape</span>
         </ToolBtn>
 
-        {/* Chart settings */}
         <ToolBtn label="Chart settings" onClick={() => {}}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.1"/>
@@ -264,12 +192,21 @@ export function CenterStack() {
         </ToolBtn>
       </div>
 
-      {/* Chart area */}
+      {/* Chart area — Liveline canvas */}
       <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
-        <ChartSVG />
+        <Liveline
+          mode="candle"
+          candles={CANDLE_POINTS}
+          candleWidth={INTERVAL}
+          data={TICK_DATA}
+          value={LIVE_VALUE}
+          theme="dark"
+          color={market.color}
+          grid
+          badge
+        />
       </div>
 
-      {/* Tape panel */}
       <TapePanel visible={tapeVisible} />
     </div>
   );

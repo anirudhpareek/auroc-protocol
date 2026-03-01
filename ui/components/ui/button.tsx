@@ -39,7 +39,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "font-semibold rounded-xl transition-all duration-150 active:scale-[0.97] relative overflow-hidden",
+        "font-semibold rounded-xl transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-150 active:scale-[0.97] relative overflow-hidden",
         size === "sm" && "px-3 py-1.5 text-xs",
         size === "md" && "px-4 py-2.5 text-xs",
         size === "lg" && "px-6 py-3 text-sm",
