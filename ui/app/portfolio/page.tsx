@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useAccount } from "wagmi";
+import { useState } from "react";
 import { Header } from "@/components/layout";
 import { usePositions } from "@/hooks/usePositions";
 import { formatPrice, formatPnl, formatUsdc } from "@/lib/format";
@@ -28,7 +28,7 @@ function MiniChart() {
   const areaD = `${pathD} L${toX(pts.length - 1).toFixed(1)},${H} L${toX(0).toFixed(1)},${H} Z`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-full">
       <defs>
         <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--long)" stopOpacity="0.15"/>
@@ -43,45 +43,57 @@ function MiniChart() {
 
 function TH({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <th style={{
-      padding: "8px 12px", fontSize: 10, fontWeight: 500, color: "var(--t3)",
-      textAlign: right ? "right" : "left", textTransform: "uppercase", letterSpacing: "0.04em",
-      borderBottom: "1px solid var(--b1)", whiteSpace: "nowrap",
-    }}>
+    <th
+      className={`px-3 py-2 text-[10px] font-medium uppercase tracking-wide whitespace-nowrap ${
+        right ? "text-right" : "text-left"
+      }`}
+      style={{ color: "var(--t3)", borderBottom: "1px solid var(--b1)" }}
+    >
       {children}
     </th>
   );
 }
 
 function TR({ h }: { h: typeof HOLDINGS[0] }) {
-  const [hov, setHov] = useState(false);
   return (
-    <tr onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: hov ? "var(--hover)" : "transparent", transition: "background 0.1s", cursor: "pointer" }}>
-      <td style={{ padding: "10px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "50%", background: h.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#000" }}>{h.sym.slice(0, 2)}</span>
+    <tr className="tr-hover">
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
+            style={{ background: h.color }}
+          >
+            <span className="text-[11px] font-bold text-black">{h.sym.slice(0, 2)}</span>
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)" }}>{h.sym}</div>
-            <div style={{ fontSize: 10, color: "var(--t3)" }}>{h.name}</div>
+            <div className="text-xs font-semibold" style={{ color: "var(--t1)" }}>{h.sym}</div>
+            <div className="text-[10px]" style={{ color: "var(--t3)" }}>{h.name}</div>
           </div>
         </div>
       </td>
-      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--t2)", fontFamily: "JetBrains Mono, monospace", textAlign: "right" }}>
+      <td className="px-3 py-2.5 text-xs tabular text-right" style={{ color: "var(--t2)" }}>
         {h.balance}
       </td>
-      <td style={{ padding: "10px 12px", textAlign: "right" }}>
-        <div style={{ fontSize: 12, color: h.up ? "var(--long)" : "var(--short)", fontFamily: "JetBrains Mono, monospace" }}>{h.pnl}</div>
-        <div style={{ fontSize: 10, color: h.up ? "var(--long)" : "var(--short)" }}>{h.pnlPct}</div>
+      <td className="px-3 py-2.5 text-right">
+        <div
+          className="text-xs tabular"
+          style={{ color: h.up ? "var(--long)" : "var(--short)" }}
+        >
+          {h.pnl}
+        </div>
+        <div
+          className="text-[10px]"
+          style={{ color: h.up ? "var(--long)" : "var(--short)" }}
+        >
+          {h.pnlPct}
+        </div>
       </td>
-      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--t3)", fontFamily: "JetBrains Mono, monospace", textAlign: "right" }}>—</td>
-      <td style={{ padding: "10px 12px", textAlign: "right" }}>
-        <span style={{ fontSize: 10, color: "var(--t3)" }}>{h.buys}/{h.sells}</span>
+      <td className="px-3 py-2.5 text-xs tabular text-right" style={{ color: "var(--t3)" }}>—</td>
+      <td className="px-3 py-2.5 text-right">
+        <span className="text-[10px]" style={{ color: "var(--t3)" }}>{h.buys}/{h.sells}</span>
       </td>
-      <td style={{ padding: "10px 12px", fontSize: 11, color: "var(--t3)", textAlign: "right" }}>{h.mcap}</td>
-      <td style={{ padding: "10px 12px", fontSize: 11, color: "var(--t3)", textAlign: "right" }}>1</td>
+      <td className="px-3 py-2.5 text-[11px] text-right" style={{ color: "var(--t3)" }}>{h.mcap}</td>
+      <td className="px-3 py-2.5 text-[11px] text-right" style={{ color: "var(--t3)" }}>1</td>
     </tr>
   );
 }
@@ -93,70 +105,82 @@ export default function PortfolioPage() {
   const [range, setRange] = useState("1W");
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       <Header />
 
-      <main style={{ flex: 1, maxWidth: 1100, margin: "0 auto", width: "100%", padding: "24px 16px" }}>
+      <main className="flex-1 max-w-[1100px] mx-auto w-full px-4 py-6">
 
         {!isConnected ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, gap: 12 }}>
-            <span style={{ fontSize: 36, opacity: 0.1 }}>◇</span>
-            <p style={{ fontSize: 13, color: "var(--t3)" }}>Connect your wallet to view your portfolio</p>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+            <span className="text-4xl opacity-10">◇</span>
+            <p className="text-[13px]" style={{ color: "var(--t3)" }}>Connect your wallet to view your portfolio</p>
           </div>
         ) : (
           <>
             {/* ── Portfolio value ── */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 4 }}>Total Portfolio Value</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                <span style={{ fontSize: 32, fontWeight: 700, color: "var(--t1)", fontFamily: "JetBrains Mono, monospace" }}>$0.00</span>
-                <span style={{ fontSize: 13, color: "var(--t3)" }}>+$0.00 (0.00%) today</span>
+            <div className="mb-6">
+              <div className="text-[11px] mb-1" style={{ color: "var(--t3)" }}>Total Portfolio Value</div>
+              <div className="flex items-baseline gap-3">
+                <span className="text-[32px] font-bold tabular" style={{ color: "var(--t1)" }}>$0.00</span>
+                <span className="text-[13px]" style={{ color: "var(--t3)" }}>+$0.00 (0.00%) today</span>
               </div>
               {address && (
-                <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 4 }}>
+                <div className="text-[11px] mt-1" style={{ color: "var(--t3)" }}>
                   {address.slice(0, 6)}…{address.slice(-4)}
                 </div>
               )}
             </div>
 
             {/* ── Chart ── */}
-            <div style={{
-              background: "var(--surface)", border: "1px solid var(--b1)", borderRadius: 12,
-              overflow: "hidden", marginBottom: 20,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--b1)" }}>
-                <div style={{ display: "flex", gap: 4 }}>
+            <div
+              className="rounded-xl overflow-hidden mb-5"
+              style={{ background: "var(--surface)", border: "1px solid var(--b1)" }}
+            >
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: "1px solid var(--b1)" }}
+              >
+                <div className="flex gap-1">
                   {["1D", "1W", "1M", "3M", "1Y", "All"].map(r => (
-                    <button key={r} onClick={() => setRange(r)}
+                    <button
+                      key={r}
+                      onClick={() => setRange(r)}
+                      className="px-2 py-0.5 rounded-[5px] text-[11px] font-medium"
                       style={{
-                        padding: "3px 8px", borderRadius: 5, fontSize: 11, fontWeight: 500,
                         background: range === r ? "var(--raised)" : "none",
                         color: range === r ? "var(--t1)" : "var(--t3)",
                         border: `1px solid ${range === r ? "var(--b2)" : "transparent"}`,
-                      }}>
+                      }}
+                    >
                       {r}
                     </button>
                   ))}
                 </div>
-                <span style={{ fontSize: 11, color: "var(--t3)" }}>PnL this {range}</span>
+                <span className="text-[11px]" style={{ color: "var(--t3)" }}>PnL this {range}</span>
               </div>
-              <div style={{ height: 180, padding: "8px 0 0" }}>
+              <div className="h-[180px] pt-2">
                 <MiniChart />
               </div>
             </div>
 
             {/* ── Sub-nav ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 16, borderBottom: "1px solid var(--b1)", paddingBottom: 0 }}>
+            <div
+              className="flex items-center gap-0.5 mb-4 pb-0"
+              style={{ borderBottom: "1px solid var(--b1)" }}
+            >
               {(["Spot", "Performance", "Wallets"] as SubNav[]).map(nav => {
                 const active = subNav === nav;
                 return (
-                  <button key={nav} onClick={() => setSubNav(nav)}
+                  <button
+                    key={nav}
+                    onClick={() => setSubNav(nav)}
+                    className="px-4 py-2 text-xs -mb-px transition-all duration-100"
                     style={{
-                      padding: "8px 16px", fontSize: 12, fontWeight: active ? 600 : 400,
+                      fontWeight: active ? 600 : 400,
                       color: active ? "var(--t1)" : "var(--t3)",
                       borderBottom: active ? "2px solid var(--t1)" : "2px solid transparent",
-                      marginBottom: -1, background: "none", transition: "all 0.1s",
-                    }}>
+                    }}
+                  >
                     {nav}
                   </button>
                 );
@@ -165,8 +189,11 @@ export default function PortfolioPage() {
 
             {/* ── Holdings table ── */}
             {subNav === "Spot" && (
-              <div style={{ background: "var(--surface)", border: "1px solid var(--b1)", borderRadius: 12, overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{ background: "var(--surface)", border: "1px solid var(--b1)" }}
+              >
+                <table className="w-full border-collapse">
                   <thead>
                     <tr>
                       <TH>Token</TH>
@@ -182,24 +209,37 @@ export default function PortfolioPage() {
                     {HOLDINGS.map(h => <TR key={h.sym} h={h} />)}
                     {positions.length > 0 && positions.map(p => (
                       <tr key={p.id} style={{ borderTop: "1px solid var(--b1)" }}>
-                        <td style={{ padding: "10px 12px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 30, height: 30, borderRadius: 6, background: "var(--raised)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--b2)" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: p.isLong ? "var(--long)" : "var(--short)" }}>{p.isLong ? "L" : "S"}</span>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="w-[30px] h-[30px] rounded-md flex items-center justify-center"
+                              style={{ background: "var(--raised)", border: "1px solid var(--b2)" }}
+                            >
+                              <span
+                                className="text-[10px] font-bold"
+                                style={{ color: p.isLong ? "var(--long)" : "var(--short)" }}
+                              >
+                                {p.isLong ? "L" : "S"}
+                              </span>
                             </div>
                             <div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)" }}>Perp Position</div>
-                              <div style={{ fontSize: 10, color: p.isLong ? "var(--long)" : "var(--short)" }}>{p.isLong ? "LONG" : "SHORT"}</div>
+                              <div className="text-xs font-semibold" style={{ color: "var(--t1)" }}>Perp Position</div>
+                              <div
+                                className="text-[10px]"
+                                style={{ color: p.isLong ? "var(--long)" : "var(--short)" }}
+                              >
+                                {p.isLong ? "LONG" : "SHORT"}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--t2)", fontFamily: "JetBrains Mono, monospace", textAlign: "right" }}>
+                        <td className="px-3 py-2.5 text-xs tabular text-right" style={{ color: "var(--t2)" }}>
                           ${formatUsdc(p.size < 0n ? -p.size : p.size)}
                         </td>
-                        <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                          {(() => { const { str, isPositive } = formatPnl(p.unrealizedPnL); return <span style={{ fontSize: 12, color: isPositive ? "var(--long)" : "var(--short)", fontFamily: "JetBrains Mono, monospace" }}>{str}</span>; })()}
+                        <td className="px-3 py-2.5 text-right">
+                          {(() => { const { str, isPositive } = formatPnl(p.unrealizedPnL); return <span className="text-xs tabular" style={{ color: isPositive ? "var(--long)" : "var(--short)" }}>{str}</span>; })()}
                         </td>
-                        <td colSpan={4} style={{ padding: "10px 12px", fontSize: 11, color: "var(--t3)", textAlign: "right" }}>—</td>
+                        <td colSpan={4} className="px-3 py-2.5 text-[11px] text-right" style={{ color: "var(--t3)" }}>—</td>
                       </tr>
                     ))}
                   </tbody>
@@ -208,27 +248,36 @@ export default function PortfolioPage() {
             )}
 
             {subNav === "Performance" && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 0", gap: 8 }}>
-                <span style={{ fontSize: 32, opacity: 0.1 }}>◉</span>
-                <span style={{ fontSize: 12, color: "var(--t3)" }}>Performance analytics coming soon</span>
+              <div className="flex flex-col items-center py-15 gap-2">
+                <span className="text-[32px] opacity-10">◉</span>
+                <span className="text-xs" style={{ color: "var(--t3)" }}>Performance analytics coming soon</span>
               </div>
             )}
 
             {subNav === "Wallets" && (
-              <div style={{ background: "var(--surface)", border: "1px solid var(--b1)", borderRadius: 12, padding: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)" }}>Connected Wallet</span>
-                  <span style={{ fontSize: 10, color: "var(--t3)" }}>Arbitrum Sepolia</span>
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "var(--surface)", border: "1px solid var(--b1)" }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold" style={{ color: "var(--t1)" }}>Connected Wallet</span>
+                  <span className="text-[10px]" style={{ color: "var(--t3)" }}>Arbitrum Sepolia</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--raised)", borderRadius: 8, border: "1px solid var(--b1)" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--blue-dim)", border: "1px solid rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 14 }}>👛</span>
+                <div
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg"
+                  style={{ background: "var(--raised)", border: "1px solid var(--b1)" }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--blue-dim)", border: "1px solid rgba(59,130,246,0.2)" }}
+                  >
+                    <span className="text-sm">👛</span>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)", fontFamily: "JetBrains Mono, monospace" }}>
+                    <div className="text-xs font-semibold tabular" style={{ color: "var(--t1)" }}>
                       {address?.slice(0, 8)}…{address?.slice(-6)}
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--t3)" }}>1 wallet tracked</div>
+                    <div className="text-[10px]" style={{ color: "var(--t3)" }}>1 wallet tracked</div>
                   </div>
                 </div>
               </div>

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { RefObject, ReactNode } from "react";
-import { Search, Bell, Menu, TrendingUp, Briefcase, ArrowLeftRight, Vault, Star } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 
+/* ─── Watchlist data ─── */
 const WATCH_TOKENS = [
   { sym: "XAU", pair: "XAU/USD", price: "2,892.40", chg: "+0.45%", up: true,  color: "#d4a017" },
   { sym: "SPX", pair: "SPX/USD", price: "5,234.18", chg: "-0.12%", up: false, color: "#22c55e" },
@@ -16,183 +17,193 @@ const WATCH_TOKENS = [
   { sym: "GLD", pair: "GLD/USD", price: "2,891.80", chg: "+0.41%", up: true,  color: "#ffd700" },
 ];
 
+/* ─── Nav link with active gold underline dot ─── */
 function NavLink({ label, href, active }: { label: string; href: string; active: boolean }) {
   return (
-    <Link href={href} style={{
-      position: "relative",
-      padding: "4px 13px",
-      borderRadius: 6,
-      fontSize: "var(--text-base)",
-      fontWeight: active ? "var(--fw-semibold)" as unknown as number : "var(--fw-regular)" as unknown as number,
-      textDecoration: "none",
-      color: active ? "var(--t1)" : "var(--t2)",
-      transition: "color 0.15s, background-color 0.15s",
-      background: active ? "var(--hover)" : "transparent",
-      letterSpacing: active ? "-0.01em" : "0",
-    }}>
+    <Link
+      href={href}
+      className={[
+        "relative px-3 py-1 rounded-md text-[length:var(--text-base)] no-underline",
+        "transition-colors duration-150",
+        active
+          ? "font-semibold tracking-tight"
+          : "font-normal tracking-normal",
+      ].join(" ")}
+      style={{
+        color: active ? "var(--t1)" : "var(--t2)",
+        backgroundColor: active ? "var(--hover)" : "transparent",
+      }}
+    >
       {label}
       {active && (
-        <span style={{
-          position: "absolute",
-          bottom: -1,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 16,
-          height: 2,
-          borderRadius: 1,
-          background: "var(--gold)",
-          boxShadow: "0 0 6px var(--gold-glow)",
-        }} />
+        <span
+          className="absolute -bottom-px left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-sm"
+          style={{
+            background: "var(--gold)",
+            boxShadow: "0 0 6px var(--gold-glow)",
+          }}
+        />
       )}
     </Link>
   );
 }
 
+/* ─── Props ─── */
 interface HeaderProps {
   searchRef?: RefObject<HTMLInputElement | null>;
   densityToggle?: ReactNode;
 }
 
-export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
+/* ─── Header ─── */
+export function Header({ searchRef, densityToggle }: HeaderProps) {
   const pathname = usePathname();
   const isTrade = pathname === "/";
 
   return (
-    <header style={{
-      background: "var(--surface)",
-      borderBottom: "1px solid var(--b1)",
-      /* Subtle gold accent on very top edge */
-      boxShadow: "inset 0 1px 0 rgba(245,200,66,0.12)",
-    }}>
+    <header
+      className="border-b"
+      style={{
+        background: "var(--surface)",
+        borderColor: "var(--b1)",
+        boxShadow: "inset 0 1px 0 rgba(245,200,66,0.12)",
+      }}
+    >
       {/* ── Top bar ── */}
-      <div style={{ height: 46, display: "flex", alignItems: "center", padding: "0 16px", gap: 10 }}>
+      <div className="flex items-center h-[46px] px-4 gap-2.5">
 
         {/* Logo */}
-        <Link href="/" aria-label="Auroc Protocol — home" style={{ display: "flex", alignItems: "center", gap: 9, marginRight: 6, textDecoration: "none", flexShrink: 0 }}>
-          <div aria-hidden="true" style={{
-            width: 30, height: 30, borderRadius: 9,
-            background: "linear-gradient(145deg, #f5c842 0%, #e09a10 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 12px rgba(245,200,66,0.35), 0 2px 4px rgba(0,0,0,0.4)",
-            flexShrink: 0,
-          }}>
+        <Link
+          href="/"
+          aria-label="Auroc Protocol - home"
+          className="flex items-center gap-2 mr-1.5 no-underline shrink-0"
+        >
+          <div
+            aria-hidden="true"
+            className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0"
+            style={{
+              background: "linear-gradient(145deg, #f5c842 0%, #e09a10 100%)",
+              boxShadow: "0 0 12px rgba(245,200,66,0.35), 0 2px 4px rgba(0,0,0,0.4)",
+            }}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 1L12 6H9L7 12L5 6H2L7 1Z" fill="#1a1000"/>
-              <path d="M7 1L12 6H2L7 1Z" fill="rgba(255,255,255,0.3)"/>
+              <path d="M7 1L12 6H9L7 12L5 6H2L7 1Z" fill="#1a1000" />
+              <path d="M7 1L12 6H2L7 1Z" fill="rgba(255,255,255,0.3)" />
             </svg>
           </div>
-          <span style={{ fontWeight: "var(--fw-bold)" as unknown as number, fontSize: "var(--text-lg)", letterSpacing: "-0.04em", color: "var(--t1)" }}>
+          <span
+            className="font-bold text-[length:var(--text-lg)] tracking-tighter"
+            style={{ color: "var(--t1)" }}
+          >
             AUROC
           </span>
         </Link>
 
-        {/* Nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 1 }} aria-label="Main navigation">
+        {/* Navigation */}
+        <nav className="flex items-center gap-px" aria-label="Main navigation">
           <NavLink label="Trade"     href="/"          active={pathname === "/"} />
           <NavLink label="Portfolio" href="/portfolio" active={pathname === "/portfolio"} />
           <NavLink label="Swap"      href="/swap"      active={pathname === "/swap"} />
           <NavLink label="Vault"     href="/vault"     active={pathname === "/vault"} />
         </nav>
 
-        {/* Vaults badge */}
-        <div aria-hidden="true" style={{
-          display: "flex", alignItems: "center", gap: 5,
-          padding: "3px 9px", borderRadius: 20,
-          background: "var(--gold-bg)",
-          border: "1px solid rgba(245,200,66,0.22)",
-          flexShrink: 0,
-        }}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-            <path d="M5 0.5L6.5 3.5H9.5L7 5.5L8 9L5 7.2L2 9L3 5.5L0.5 3.5H3.5L5 0.5Z" fill="var(--gold)"/>
-          </svg>
-          <span style={{ fontSize: "var(--text-2xs)", fontWeight: "var(--fw-bold)" as unknown as number, color: "var(--gold)", letterSpacing: "0.07em" }}>VAULTS</span>
-        </div>
-
-        <div style={{ flex: 1 }} />
+        {/* Spacer */}
+        <div className="flex-1" />
 
         {/* Search */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "0 11px", borderRadius: 8,
-          background: "var(--raised)", border: "1px solid var(--b2)",
-          height: 32, width: 190,
-          color: "var(--t3)",
-          transition: "border-color 0.15s, background-color 0.15s",
-        }}>
-          <Search size={12} aria-hidden="true" style={{ flexShrink: 0 }} />
+        <div
+          className="flex items-center gap-2 px-3 rounded-lg h-8 w-[190px] transition-colors duration-150"
+          style={{
+            background: "var(--raised)",
+            border: "1px solid var(--b2)",
+            color: "var(--t3)",
+          }}
+        >
+          <Search size={12} aria-hidden="true" className="shrink-0" />
           <input
             ref={searchRef}
             type="search"
-            placeholder="Search markets…"
+            placeholder="Search markets..."
             aria-label="Search markets"
-            style={{
-              flex: 1, background: "transparent", border: "none", outline: "none",
-              fontSize: "var(--text-sm)", color: "var(--t2)",
-            }}
+            className="flex-1 bg-transparent border-none outline-none text-[length:var(--text-sm)]"
+            style={{ color: "var(--t2)" }}
           />
-          <span style={{
-            fontSize: "var(--text-2xs)", color: "var(--t4)",
-            background: "var(--active)", padding: "1px 5px", borderRadius: 4,
-            border: "1px solid var(--b1)", flexShrink: 0,
-          }}>/</span>
+          <kbd
+            className="shrink-0 text-[length:var(--text-2xs)] px-1.5 py-px rounded"
+            style={{
+              color: "var(--t4)",
+              background: "var(--active)",
+              border: "1px solid var(--b1)",
+            }}
+          >
+            /
+          </kbd>
         </div>
 
-        {/* Density toggle (injected by TerminalShell) */}
+        {/* Density toggle slot */}
         {densityToggle}
 
-        {/* Menu */}
-        <button aria-label="Open menu" style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "5px 11px", borderRadius: 8,
-          background: "var(--raised)", border: "1px solid var(--b2)",
-        }}>
-          <svg width="13" height="10" viewBox="0 0 13 10" fill="none" aria-hidden="true">
-            <rect width="13" height="1.5" rx="0.75" fill="var(--t2)"/>
-            <rect y="4.25" width="13" height="1.5" rx="0.75" fill="var(--t2)"/>
-            <rect y="8.5"  width="13" height="1.5" rx="0.75" fill="var(--t2)"/>
-          </svg>
-          <span style={{ fontSize: "var(--text-sm)", color: "var(--t2)", fontWeight: "var(--fw-medium)" as unknown as number }}>0</span>
-        </button>
-
-        {/* Bell */}
-        <button aria-label="Notifications" style={{
-          width: 32, height: 32, borderRadius: 8,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--t2)", border: "1px solid transparent",
-          transition: "background-color 0.15s, border-color 0.15s",
-        }}>
+        {/* Notifications */}
+        <button
+          aria-label="Notifications"
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150
+                     hover:bg-[var(--hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+          style={{ color: "var(--t2)" }}
+        >
           <Bell size={14} aria-hidden="true" />
         </button>
 
-        {/* Wallet */}
+        {/* Wallet connect */}
         <ConnectButton.Custom>
           {({ account, openConnectModal, openAccountModal, mounted }) => {
-            if (!mounted) return <div aria-hidden="true" style={{ width: 110, height: 32 }} />;
-            if (!account) return (
-              <button onClick={openConnectModal} style={{
-                padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                background: "rgba(245,200,66,0.10)",
-                color: "var(--gold)",
-                border: "1px solid rgba(245,200,66,0.25)",
-                letterSpacing: "-0.01em",
-                transition: "background-color 0.15s, border-color 0.15s",
-              }}>
-                Connect
-              </button>
-            );
+            if (!mounted) {
+              return <div aria-hidden="true" className="w-[110px] h-8" />;
+            }
+
+            if (!account) {
+              return (
+                <button
+                  onClick={openConnectModal}
+                  className="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold tracking-tight
+                             transition-colors duration-150
+                             hover:border-[rgba(245,200,66,0.40)]
+                             focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+                  style={{
+                    background: "rgba(245,200,66,0.10)",
+                    color: "var(--gold)",
+                    border: "1px solid rgba(245,200,66,0.25)",
+                  }}
+                >
+                  Connect
+                </button>
+              );
+            }
+
             return (
-              <button onClick={openAccountModal} style={{
-                display: "flex", alignItems: "center", gap: 7,
-                padding: "5px 11px", borderRadius: 8,
-                background: "var(--raised)", border: "1px solid var(--b2)",
-                transition: "background-color 0.15s, border-color 0.15s",
-              }}>
-                <div aria-hidden="true" style={{
-                  width: 16, height: 16, borderRadius: "50%",
-                  background: "linear-gradient(135deg, var(--gold), var(--long))",
-                  flexShrink: 0, boxShadow: "0 0 6px rgba(245,200,66,0.3)",
-                }} />
-                <span style={{ fontSize: "var(--text-sm)", color: "var(--t1)", fontFamily: "var(--mono)", letterSpacing: "-0.02em" }}>
+              <button
+                onClick={openAccountModal}
+                className="flex items-center gap-[7px] px-3 py-[5px] rounded-lg transition-colors duration-150
+                           hover:bg-[var(--hover)]
+                           focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+                style={{
+                  background: "var(--raised)",
+                  border: "1px solid var(--b2)",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="w-4 h-4 rounded-full shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, var(--gold), var(--long))",
+                    boxShadow: "0 0 6px rgba(245,200,66,0.3)",
+                  }}
+                />
+                <span
+                  className="text-[length:var(--text-sm)] tracking-tight"
+                  style={{
+                    color: "var(--t1)",
+                    fontFamily: "var(--mono)",
+                  }}
+                >
                   {account.displayName}
                 </span>
               </button>
@@ -201,55 +212,106 @@ export function Header({ searchRef, densityToggle }: HeaderProps = {}) {
         </ConnectButton.Custom>
       </div>
 
-      {/* ── Watchlist strip (non-Trade pages only) ── */}
+      {/* ── Watchlist ticker strip (non-Trade pages only) ── */}
       {!isTrade && (
-        <div style={{
-          height: 30, display: "flex", alignItems: "center",
-          borderTop: "1px solid var(--b1)", background: "var(--bg)",
-          position: "relative", overflow: "hidden",
-        }}>
+        <div
+          className="flex items-center h-[30px] relative overflow-hidden border-t"
+          style={{
+            background: "var(--bg)",
+            borderColor: "var(--b1)",
+          }}
+        >
           {/* Watchlist label */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "0 12px", height: "100%",
-            borderRight: "1px solid var(--b1)", flexShrink: 0, minWidth: 96,
-          }}>
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--t2)", fontWeight: "var(--fw-medium)" as unknown as number }}>Watchlist</span>
+          <div
+            className="flex items-center gap-1.5 px-3 h-full shrink-0 min-w-[96px] border-r"
+            style={{ borderColor: "var(--b1)" }}
+          >
+            <span
+              className="text-[length:var(--text-xs)] font-medium"
+              style={{ color: "var(--t2)" }}
+            >
+              Watchlist
+            </span>
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-              <path d="M1 3L4 6L7 3" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M1 3L4 6L7 3" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
           </div>
 
-          {/* Fade edges */}
-          <div aria-hidden="true" style={{ position: "absolute", left: 96, top: 0, bottom: 0, width: 24, background: "linear-gradient(to right, var(--bg), transparent)", zIndex: 1, pointerEvents: "none" }} />
-          <div aria-hidden="true" style={{ position: "absolute", right: 44, top: 0, bottom: 0, width: 24, background: "linear-gradient(to left, var(--bg), transparent)", zIndex: 1, pointerEvents: "none" }} />
+          {/* Left fade */}
+          <div
+            aria-hidden="true"
+            className="absolute left-[96px] top-0 bottom-0 w-6 z-[1] pointer-events-none"
+            style={{ background: "linear-gradient(to right, var(--bg), transparent)" }}
+          />
+          {/* Right fade */}
+          <div
+            aria-hidden="true"
+            className="absolute right-11 top-0 bottom-0 w-6 z-[1] pointer-events-none"
+            style={{ background: "linear-gradient(to left, var(--bg), transparent)" }}
+          />
 
-          {/* Ticker */}
-          <div className="animate-ticker" aria-hidden="true" style={{ display: "flex", alignItems: "center", width: "max-content" }}>
+          {/* Scrolling ticker */}
+          <div
+            className="animate-ticker flex items-center w-max"
+            aria-hidden="true"
+          >
             {[...WATCH_TOKENS, ...WATCH_TOKENS].map((t, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, padding: "0 18px", flexShrink: 0 }}>
-                <div style={{
-                  width: 16, height: 16, borderRadius: "50%", background: t.color,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 7, fontWeight: 800, color: "#fff", flexShrink: 0,
-                }}>{t.sym[0]}</div>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--t2)", fontWeight: "var(--fw-medium)" as unknown as number }}>{t.sym}</span>
-                <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t1)" }}>${t.price}</span>
-                <span style={{ fontSize: "var(--text-2xs)", color: t.up ? "var(--long)" : "var(--short)" }}>{t.chg}</span>
+              <div key={i} className="flex items-center gap-[7px] px-[18px] shrink-0">
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-extrabold text-white shrink-0"
+                  style={{ background: t.color }}
+                >
+                  {t.sym[0]}
+                </div>
+                <span
+                  className="text-[length:var(--text-xs)] font-medium"
+                  style={{ color: "var(--t2)" }}
+                >
+                  {t.sym}
+                </span>
+                <span
+                  className="tabular text-[length:var(--text-xs)]"
+                  style={{ color: "var(--t1)" }}
+                >
+                  ${t.price}
+                </span>
+                <span
+                  className="text-[length:var(--text-2xs)]"
+                  style={{ color: t.up ? "var(--long)" : "var(--short)" }}
+                >
+                  {t.chg}
+                </span>
               </div>
             ))}
           </div>
 
           {/* Right controls */}
-          <div style={{
-            position: "absolute", right: 0,
-            display: "flex", alignItems: "center", gap: 7,
-            padding: "0 10px", height: "100%",
-            background: "var(--bg)", borderLeft: "1px solid var(--b1)", zIndex: 2,
-          }}>
-            <button aria-label="Manage watchlist" style={{ fontSize: 13, color: "var(--t3)", padding: 2, lineHeight: 1 }}>★</button>
-            <div aria-hidden="true" style={{ width: 1, height: 10, background: "var(--b1)" }} />
-            <div className="animate-live" aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--long)" }} />
+          <div
+            className="absolute right-0 flex items-center gap-[7px] px-2.5 h-full z-[2] border-l"
+            style={{
+              background: "var(--bg)",
+              borderColor: "var(--b1)",
+            }}
+          >
+            <button
+              aria-label="Manage watchlist"
+              className="text-[13px] p-0.5 leading-none transition-colors duration-150
+                         hover:text-[var(--gold)]
+                         focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+              style={{ color: "var(--t3)" }}
+            >
+              &#9733;
+            </button>
+            <div
+              aria-hidden="true"
+              className="w-px h-2.5"
+              style={{ background: "var(--b1)" }}
+            />
+            <div
+              className="animate-live w-1.5 h-1.5 rounded-full"
+              aria-hidden="true"
+              style={{ background: "var(--long)" }}
+            />
           </div>
         </div>
       )}

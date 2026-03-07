@@ -57,25 +57,19 @@ function TerminalKeyboardHandler() {
 function DensityToggle() {
   const { density, setDensity } = useTerminal();
   return (
-    <div style={{
-      display: "flex",
-      borderRadius: "var(--radius-full)",
-      border: "1px solid var(--b2)",
-      overflow: "hidden",
-      background: "var(--raised)",
-    }}>
+    <div className="flex overflow-hidden" style={{ borderRadius: "var(--radius-full)", border: "1px solid var(--b2)", background: "var(--raised)" }}>
       {(["compact", "comfortable"] as Density[]).map((d) => (
         <button
           key={d}
           type="button"
           onClick={() => setDensity(d)}
+          className="capitalize transition-colors"
           style={{
             padding: "3px 10px",
-            fontSize: "var(--text-2xs)", fontWeight: 500,
+            fontSize: "var(--text-2xs)",
+            fontWeight: 500,
             background: density === d ? "var(--active)" : "transparent",
             color: density === d ? "var(--t1)" : "var(--t3)",
-            transition: "var(--transition-fast)",
-            textTransform: "capitalize",
           }}
         >
           {d}
@@ -93,19 +87,14 @@ function TerminalInner() {
       <TerminalKeyboardHandler />
       <div
         data-density={density}
-        style={{
-          height: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--bg)",
-          overflow: "hidden",
-        }}
+        className="h-screen flex flex-col overflow-hidden"
+        style={{ background: "var(--bg)" }}
       >
         <Header searchRef={searchRef} densityToggle={<DensityToggle />} />
         <MarketTickerBar />
 
-        {/* Main body row */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+        {/* Main body — chart + orderbook + trade ticket */}
+        <div className="flex flex-1 overflow-hidden min-h-0">
           <CenterStack />
           <OrderBook />
           <RightTradeStack />

@@ -12,6 +12,7 @@ type Direction = "long" | "short";
 type OrderType = "Market" | "Limit";
 
 const LEVERAGE_PRESETS = [2, 5, 10, 20, 50] as const;
+const SLIPPAGE_PRESETS = [0.1, 0.5, 1.0] as const;
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -32,7 +33,10 @@ function Divider() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontSize: "var(--text-2xs)", fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--t3)" }}>
+    <span
+      className="font-semibold uppercase tracking-wider"
+      style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}
+    >
       {children}
     </span>
   );
@@ -40,11 +44,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function DetailRow({ label, value, pencil }: { label: string; value: string; pencil?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div className="flex items-center justify-between">
       <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>{label}</span>
-      <span style={{ fontSize: "var(--text-xs)", color: "var(--t2)", fontFamily: "var(--mono)", display: "flex", alignItems: "center", gap: 3 }}>
+      <span
+        className="tabular flex items-center gap-[3px]"
+        style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}
+      >
         {pencil && (
-          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ opacity: 0.4 }} aria-hidden="true">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" className="opacity-40" aria-hidden="true">
             <path d="M1 8L6.5 3C7 2.5 7.8 2.5 8.1 2.9S8.2 4 7.6 4.5L2.2 8.5L1 8Z" stroke="currentColor" strokeWidth="0.8"/>
           </svg>
         )}
@@ -67,6 +74,9 @@ export function TradeTicket() {
   const [tpsl, setTpsl]           = useState(false);
   const [focusedCollateral, setFocusedCollateral] = useState(false);
   const [focusedLimit, setFocusedLimit]           = useState(false);
+  const [slippage, setSlippage]   = useState(0.5);
+  const [customSlippage, setCustomSlippage] = useState("");
+  const [showSlippageMenu, setShowSlippageMenu] = useState(false);
 
   const { marketInfo } = useMarketData(selMarket.id);
   const { writeContract, data: txHash, isPending } = useWriteContract();
@@ -145,47 +155,76 @@ export function TradeTicket() {
   const canTrade = !!address && collateralNum > 0 && !isBusy && !needsApproval;
   const isMaxLev = leverage === LEVERAGE_PRESETS[LEVERAGE_PRESETS.length - 1];
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--panel)", overflowY: "auto" }}>
+  const handleCustomSlippage = (val: string) => {
+    setCustomSlippage(val);
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 50) {
+      setSlippage(parsed);
+    }
+  };
 
-      {/* ── 1. Market chips ── */}
-      <div style={{ display: "flex", gap: "var(--sp-1)", padding: "var(--sp-2) var(--sp-3) 0" }}>
+  return (
+    <div
+      className="flex flex-col h-full overflow-y-auto"
+      style={{ background: "var(--panel)" }}
+    >
+
+      {/* -- 1. Market chips -- */}
+      <div className="flex gap-1 px-3 pt-2">
         {AVAILABLE_TERMINAL_MARKETS.map((m) => {
           const active = m.id === selMarket.id;
           return (
-            <button key={m.id} onClick={() => setSelMarket(m)} style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "3px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600,
-              background: active ? "var(--raised)" : "transparent",
-              color: active ? "var(--t1)" : "var(--t3)",
-              border: `1px solid ${active ? "var(--b3)" : "transparent"}`,
-              transition: "var(--transition-fast)",
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: active ? m.color : "var(--t3)", flexShrink: 0, display: "inline-block", transition: "background-color 0.1s" }} aria-hidden="true" />
+            <button
+              key={m.id}
+              onClick={() => setSelMarket(m)}
+              className="flex items-center gap-[5px] px-[10px] py-[3px] font-semibold transition-all"
+              style={{
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--text-xs)",
+                background: active ? "var(--raised)" : "transparent",
+                color: active ? "var(--t1)" : "var(--t3)",
+                border: `1px solid ${active ? "var(--b3)" : "transparent"}`,
+              }}
+            >
+              <span
+                className="inline-block shrink-0 rounded-full transition-colors duration-100"
+                style={{ width: 6, height: 6, background: active ? m.color : "var(--t3)" }}
+                aria-hidden="true"
+              />
               {m.pair}
             </button>
           );
         })}
       </div>
 
-      {/* ── 2. Long / Short toggle ── */}
-      <div style={{ padding: "var(--sp-2) var(--sp-3) 0" }}>
-        <div style={{ display: "flex", borderRadius: "var(--radius-lg)", overflow: "hidden", border: "1px solid var(--b2)" }}>
+      {/* -- 2. Long / Short toggle -- */}
+      <div className="px-3 pt-2">
+        <div
+          className="flex overflow-hidden"
+          style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--b2)" }}
+        >
           {(["long", "short"] as Direction[]).map((d) => {
             const active = direction === d;
-            const dAccent   = d === "long" ? "var(--long)"       : "var(--short)";
-            const dBg       = d === "long" ? "var(--long)"       : "var(--short)";
-            const dActiveBg = d === "long" ? "var(--long-active)": "var(--short-active)";
             return (
-              <button key={d} onClick={() => setDirection(d)} style={{
-                flex: 1, height: 38, fontSize: "var(--text-sm)", fontWeight: 700,
-                letterSpacing: "0.04em", textTransform: "uppercase",
-                background: active ? dBg : dActiveBg,
-                color: active ? "#fff" : dAccent,
-                borderRight: d === "long" ? "1px solid var(--b2)" : "none",
-                opacity: active ? 1 : 0.45,
-                transition: "var(--transition-fast)",
-              }}>
+              <button
+                key={d}
+                onClick={() => setDirection(d)}
+                aria-pressed={active}
+                className="flex-1 font-bold uppercase tracking-wider transition-all"
+                style={{
+                  height: 38,
+                  fontSize: "var(--text-sm)",
+                  letterSpacing: "0.04em",
+                  background: active
+                    ? (d === "long" ? "var(--long)" : "var(--short)")
+                    : (d === "long" ? "var(--long-active)" : "var(--short-active)"),
+                  color: active
+                    ? "#fff"
+                    : (d === "long" ? "var(--long)" : "var(--short)"),
+                  borderRight: d === "long" ? "1px solid var(--b2)" : "none",
+                  opacity: active ? 1 : 0.45,
+                }}
+              >
                 {d === "long" ? "▲ Long" : "▼ Short"}
               </button>
             );
@@ -193,133 +232,218 @@ export function TradeTicket() {
         </div>
       </div>
 
-      {/* ── 3. Order type + Cross + Leverage ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", padding: "var(--sp-2) var(--sp-3) 0" }}>
-        <div style={{ display: "flex", gap: 2, flex: 1 }}>
+      {/* -- 3. Order type + Cross -- */}
+      <div className="flex items-center gap-1 px-3 pt-2">
+        <div className="flex gap-[2px] flex-1">
           {(["Market", "Limit"] as OrderType[]).map((t) => {
             const active = orderType === t;
             return (
-              <button key={t} onClick={() => setOrderType(t)} style={{
-                padding: "3px 9px", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 500,
-                background: active ? "var(--raised)" : "transparent",
-                color: active ? "var(--t1)" : "var(--t3)",
-                border: `1px solid ${active ? "var(--b3)" : "transparent"}`,
-                transition: "var(--transition-fast)",
-              }}>{t}</button>
+              <button
+                key={t}
+                onClick={() => setOrderType(t)}
+                className="px-[9px] py-[3px] font-medium transition-all"
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "var(--text-xs)",
+                  background: active ? "var(--raised)" : "transparent",
+                  color: active ? "var(--t1)" : "var(--t3)",
+                  border: `1px solid ${active ? "var(--b3)" : "transparent"}`,
+                }}
+              >
+                {t}
+              </button>
             );
           })}
         </div>
 
-        <button style={{
-          display: "flex", alignItems: "center", gap: 4,
-          padding: "3px 9px", borderRadius: "var(--radius-md)",
-          fontSize: "var(--text-xs)", color: "var(--t2)",
-          border: "1px solid var(--b2)", background: "var(--raised)",
-          transition: "var(--transition-fast)",
-        }}>
+        <button
+          className="flex items-center gap-1 px-[9px] py-[3px] transition-all"
+          style={{
+            borderRadius: "var(--radius-md)",
+            fontSize: "var(--text-xs)",
+            color: "var(--t2)",
+            border: "1px solid var(--b2)",
+            background: "var(--raised)",
+          }}
+        >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
             <path d="M2 5h6M3.5 3L2 5l1.5 2M6.5 3L8 5l-1.5 2" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Cross
         </button>
+      </div>
 
-        <button onClick={cycleLeverage} style={{
-          display: "flex", alignItems: "center", gap: 4,
-          padding: "3px 9px", borderRadius: "var(--radius-md)",
-          fontSize: "var(--text-xs)", fontWeight: 700,
-          color: isMaxLev ? "var(--warning)" : accent,
-          border: `1px solid ${isMaxLev ? "var(--warning-dim)" : accentMid}`,
-          background: isMaxLev ? "var(--warning-dim)" : accentDim,
-          minWidth: 46, justifyContent: "center",
-          transition: "var(--transition-fast)",
-        }}>
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true" style={{ opacity: 0.7 }}>
-            <path d="M1 7L4 1L7 7" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round"/>
+      {/* -- 3b. Leverage selector -- */}
+      <div className="flex items-center gap-1 px-3 pt-2">
+        {LEVERAGE_PRESETS.map((lev) => {
+          const active = leverage === lev;
+          const isMax = lev === LEVERAGE_PRESETS[LEVERAGE_PRESETS.length - 1];
+          return (
+            <button
+              key={lev}
+              onClick={() => setLeverage(lev)}
+              aria-pressed={active}
+              className="flex-1 flex items-center justify-center font-bold transition-all"
+              style={{
+                height: 28,
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--text-xs)",
+                color: active
+                  ? (isMax ? "var(--warning)" : accent)
+                  : "var(--t3)",
+                background: active
+                  ? (isMax ? "var(--warning-dim)" : accentDim)
+                  : "transparent",
+                border: `1px solid ${
+                  active
+                    ? (isMax ? "var(--warning-mid)" : accentMid)
+                    : "var(--b1)"
+                }`,
+              }}
+            >
+              {lev}x
+            </button>
+          );
+        })}
+        <button
+          onClick={cycleLeverage}
+          aria-label="Cycle leverage"
+          className="flex items-center justify-center shrink-0 transition-all"
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--b2)",
+            background: "var(--raised)",
+            color: "var(--t2)",
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M8 3.5A3.5 3.5 0 1 0 8.5 7M8 1v3h-3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {leverage}×
         </button>
       </div>
 
-      {/* ── 4. Limit price input (conditional) ── */}
+      {/* -- 4. Limit price input (conditional) -- */}
       {orderType === "Limit" && (
-        <div style={{ padding: "var(--sp-2) var(--sp-3) 0" }} className="animate-expand">
-          <div style={{
-            borderRadius: "var(--radius-lg)",
-            border: `1px solid ${focusedLimit ? "var(--b3)" : "var(--b1)"}`,
-            background: "var(--raised)", overflow: "hidden",
-            transition: "border-color 0.1s",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px 3px" }}>
+        <div className="px-3 pt-2 animate-expand">
+          <div
+            className="overflow-hidden transition-colors duration-100"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              border: `1px solid ${focusedLimit ? "var(--b3)" : "var(--b1)"}`,
+              background: "var(--raised)",
+            }}
+          >
+            <div className="flex items-center justify-between px-[10px] pt-[6px] pb-[3px]">
               <SectionLabel>Limit Price</SectionLabel>
               <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>Mark: ${markStr}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", padding: "0 10px 8px", gap: 6 }}>
+            <div className="flex items-center gap-[6px] px-[10px] pb-2">
               <input
-                type="text" inputMode="decimal" value={limitPrice}
+                type="text"
+                inputMode="decimal"
+                value={limitPrice}
                 onChange={(e) => setLimitPrice(e.target.value)}
-                onFocus={() => setFocusedLimit(true)} onBlur={() => setFocusedLimit(false)}
+                onFocus={() => setFocusedLimit(true)}
+                onBlur={() => setFocusedLimit(false)}
                 placeholder="0.00"
                 aria-label="Limit price in USD"
+                className="flex-1 bg-transparent border-none outline-none tabular"
                 style={{
-                  flex: 1, background: "transparent", border: "none", outline: "none",
-                  fontSize: "var(--text-lg)", fontWeight: "var(--fw-medium)" as unknown as number, fontFamily: "var(--mono)", letterSpacing: "-0.02em",
+                  fontSize: "var(--text-lg)",
+                  fontWeight: "var(--fw-medium)" as unknown as number,
+                  letterSpacing: "-0.02em",
                   color: limitPrice ? "var(--t1)" : "var(--t3)",
                 }}
               />
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)", fontFamily: "var(--mono)", flexShrink: 0 }}>USD</span>
+              <span
+                className="tabular shrink-0"
+                style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}
+              >
+                USD
+              </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── 5. Available + Max ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--sp-2) var(--sp-3) 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      {/* -- 5. Available + Max -- */}
+      <div className="flex items-center justify-between px-3 pt-2">
+        <div className="flex items-center gap-[5px]">
           <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>Available</span>
-          <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t1)", fontWeight: 500 }}>
+          <span
+            className="tabular font-medium"
+            style={{ fontSize: "var(--text-xs)", color: "var(--t1)" }}
+          >
             {address ? fmt(balanceNum) : "0.00"}
           </span>
           <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>USDC</span>
         </div>
-        <button onClick={() => setCollateral(fmt(balanceNum))} disabled={!address || balanceNum === 0} style={{
-          fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "0.04em",
-          color: accent, padding: "2px 7px", borderRadius: "var(--radius-sm)",
-          background: accentDim, border: `1px solid ${accentMid}`,
-          transition: "var(--transition-fast)",
-        }}>MAX</button>
+        <button
+          onClick={() => setCollateral(fmt(balanceNum))}
+          disabled={!address || balanceNum === 0}
+          className="font-bold tracking-wider transition-all"
+          style={{
+            fontSize: "var(--text-2xs)",
+            letterSpacing: "0.04em",
+            color: accent,
+            padding: "2px 7px",
+            borderRadius: "var(--radius-sm)",
+            background: accentDim,
+            border: `1px solid ${accentMid}`,
+          }}
+        >
+          MAX
+        </button>
       </div>
 
-      {/* ── 6. Collateral input ── */}
-      <div style={{ margin: "6px var(--sp-3) 0" }}>
-        <div style={{
-          borderRadius: "var(--radius-lg)",
-          border: `1px solid ${focusedCollateral ? "var(--b3)" : "var(--b1)"}`,
-          background: "var(--raised)", overflow: "hidden",
-          transition: "border-color 0.1s",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px 3px" }}>
+      {/* -- 6. Collateral input -- */}
+      <div className="mx-3 mt-[6px]">
+        <div
+          className="overflow-hidden transition-colors duration-100"
+          style={{
+            borderRadius: "var(--radius-lg)",
+            border: `1px solid ${focusedCollateral ? "var(--b3)" : "var(--b1)"}`,
+            background: "var(--raised)",
+          }}
+        >
+          <div className="flex items-center justify-between px-[10px] pt-[7px] pb-[3px]">
             <SectionLabel>Order Value</SectionLabel>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 12, height: 12, borderRadius: "50%", background: selMarket.color, display: "inline-block", flexShrink: 0 }} aria-hidden="true" />
-              <span style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--t2)", letterSpacing: "0.04em" }}>{selMarket.symbol}</span>
+            <div className="flex items-center gap-[5px]">
+              <span
+                className="inline-block shrink-0 rounded-full"
+                style={{ width: 12, height: 12, background: selMarket.color }}
+                aria-hidden="true"
+              />
+              <span
+                className="font-semibold tracking-wider"
+                style={{ fontSize: "var(--text-2xs)", color: "var(--t2)" }}
+              >
+                {selMarket.symbol}
+              </span>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px 8px" }}>
+          <div className="flex items-center justify-between px-[10px] pb-2">
             <input
-              type="text" inputMode="decimal" value={collateral}
+              type="text"
+              inputMode="decimal"
+              value={collateral}
               onChange={(e) => setCollateral(e.target.value)}
-              onFocus={() => setFocusedCollateral(true)} onBlur={() => setFocusedCollateral(false)}
+              onFocus={() => setFocusedCollateral(true)}
+              onBlur={() => setFocusedCollateral(false)}
               placeholder="0"
               aria-label="Collateral amount in USDC"
+              className="bg-transparent border-none outline-none tabular w-[55%]"
               style={{
-                background: "transparent", border: "none", outline: "none",
-                fontSize: "var(--text-2xl)", fontWeight: "var(--fw-medium)" as unknown as number, letterSpacing: "-0.03em",
+                fontSize: "var(--text-2xl)",
+                fontWeight: "var(--fw-medium)" as unknown as number,
+                letterSpacing: "-0.03em",
                 color: collateral ? "var(--t1)" : "var(--t3)",
-                width: "55%", fontFamily: "var(--mono)",
               }}
             />
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "var(--text-2xs)", color: "var(--t4)", marginBottom: 2 }}>USDC</div>
+            <div className="text-right">
+              <div style={{ fontSize: "var(--text-2xs)", color: "var(--t4)" }} className="mb-[2px]">USDC</div>
               <div className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}>
                 ≈{" "}
                 {collateralNum > 0 && markStr !== "—"
@@ -331,91 +455,130 @@ export function TradeTicket() {
         </div>
       </div>
 
-      {/* ── 7. Slider + quick % ── */}
-      <div style={{ padding: "var(--sp-2) var(--sp-3) 0" }}>
-        <div style={{ position: "relative", height: 16, display: "flex", alignItems: "center" }}>
-          <div style={{ position: "absolute", width: "100%", height: 2, background: "var(--b2)", borderRadius: 1 }}>
-            <div style={{
-              height: "100%", width: `${pct}%`,
-              background: accent, borderRadius: 1,
-              transition: "width 0.15s",
-              boxShadow: pct > 0 ? `0 0 5px ${accentGlow}` : "none",
-            }} />
+      {/* -- 7. Slider + quick % -- */}
+      <div className="px-3 pt-2">
+        <div className="relative h-4 flex items-center">
+          <div className="absolute w-full h-[2px] rounded-[1px]" style={{ background: "var(--b2)" }}>
+            <div
+              className="h-full rounded-[1px] transition-[width] duration-150"
+              style={{
+                width: `${pct}%`,
+                background: accent,
+                boxShadow: pct > 0 ? `0 0 5px ${accentGlow}` : "none",
+              }}
+            />
           </div>
           <input
-            type="range" min={0} max={balanceNum || 100} step={0.01} value={collateralNum}
+            type="range"
+            min={0}
+            max={balanceNum || 100}
+            step={0.01}
+            value={collateralNum}
             onChange={(e) => setCollateral(Number(e.target.value) === 0 ? "" : fmt(Number(e.target.value)))}
             aria-label="Collateral percentage of balance"
-            style={{ position: "absolute", width: "100%", opacity: 0, cursor: "pointer", height: 16, zIndex: 2 }}
+            className="absolute w-full opacity-0 cursor-pointer h-4 z-[2]"
           />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--sp-1)" }}>
+        <div className="flex justify-between mt-1">
           {[0, 25, 50, 75, 100].map((p) => {
             const isActive = balanceNum > 0 && p > 0 && pct >= p - 1;
             return (
-              <button key={p} onClick={() => handleQuickPct(p)} style={{
-                fontSize: "var(--text-2xs)", fontWeight: 600, letterSpacing: "0.03em",
-                color: isActive ? accent : "var(--t3)",
-                padding: "2px 5px", borderRadius: "var(--radius-sm)",
-                background: isActive ? accentDim : "transparent",
-                transition: "var(--transition-fast)",
-              }}>{p}%</button>
+              <button
+                key={p}
+                onClick={() => handleQuickPct(p)}
+                className="font-semibold tracking-wider px-[5px] py-[2px] transition-all"
+                style={{
+                  fontSize: "var(--text-2xs)",
+                  color: isActive ? accent : "var(--t3)",
+                  borderRadius: "var(--radius-sm)",
+                  background: isActive ? accentDim : "transparent",
+                }}
+              >
+                {p}%
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── 8. TP / SL toggle + inputs ── */}
-      <div style={{ padding: "var(--sp-2) var(--sp-3) 0" }}>
+      {/* -- 8. TP / SL toggle + inputs -- */}
+      <div className="px-3 pt-2">
         <button
           onClick={() => setTpsl(p => !p)}
           aria-pressed={tpsl}
-          style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%" }}
+          className="flex items-center gap-2 w-full p-0"
         >
-          <span style={{
-            width: 15, height: 15, borderRadius: "var(--radius-sm)", flexShrink: 0,
-            border: `1.5px solid ${tpsl ? accent : "var(--b3)"}`,
-            background: tpsl ? accentDim : "transparent",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "var(--transition-fast)",
-          }}>
+          <span
+            className="shrink-0 flex items-center justify-center transition-all"
+            style={{
+              width: 15,
+              height: 15,
+              borderRadius: "var(--radius-sm)",
+              border: `1.5px solid ${tpsl ? accent : "var(--b3)"}`,
+              background: tpsl ? accentDim : "transparent",
+            }}
+          >
             {tpsl && (
               <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
                 <path d="M1 3.5L3.5 6L8 1" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
           </span>
-          <span style={{ fontSize: "var(--text-xs)", color: tpsl ? "var(--t1)" : "var(--t2)", transition: "color 0.1s" }}>
+          <span
+            className="transition-colors duration-100"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: tpsl ? "var(--t1)" : "var(--t2)",
+            }}
+          >
             Take Profit / Stop Loss
           </span>
         </button>
 
         {tpsl && (
-          <div className="animate-expand" style={{ display: "flex", gap: "var(--sp-2)", marginTop: "var(--sp-2)" }}>
-            <div style={{ flex: 1, borderRadius: "var(--radius-md)", border: "1px solid var(--long-mid)", background: "var(--long-dim)", padding: "6px 10px" }}>
-              <div className="label-upper" style={{ marginBottom: 4, color: "var(--long-dark)" }}>TP Price</div>
+          <div className="flex gap-2 mt-2 animate-expand">
+            <div
+              className="flex-1 px-[10px] py-[6px]"
+              style={{
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--long-mid)",
+                background: "var(--long-dim)",
+              }}
+            >
+              <div className="label-upper mb-1" style={{ color: "var(--long-dark)" }}>TP Price</div>
               <input
-                type="text" inputMode="decimal" value={tpPrice}
+                type="text"
+                inputMode="decimal"
+                value={tpPrice}
                 onChange={(e) => setTpPrice(e.target.value)}
                 placeholder="—"
                 aria-label="Take profit price"
+                className="w-full bg-transparent border-none outline-none tabular font-medium"
                 style={{
-                  width: "100%", background: "transparent", border: "none", outline: "none",
-                  fontSize: "var(--text-sm)", fontFamily: "var(--mono)", fontWeight: 500,
+                  fontSize: "var(--text-sm)",
                   color: "var(--long)",
                 }}
               />
             </div>
-            <div style={{ flex: 1, borderRadius: "var(--radius-md)", border: "1px solid var(--short-mid)", background: "var(--short-dim)", padding: "6px 10px" }}>
-              <div className="label-upper" style={{ marginBottom: 4, color: "var(--short-dark)" }}>SL Price</div>
+            <div
+              className="flex-1 px-[10px] py-[6px]"
+              style={{
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--short-mid)",
+                background: "var(--short-dim)",
+              }}
+            >
+              <div className="label-upper mb-1" style={{ color: "var(--short-dark)" }}>SL Price</div>
               <input
-                type="text" inputMode="decimal" value={slPrice}
+                type="text"
+                inputMode="decimal"
+                value={slPrice}
                 onChange={(e) => setSlPrice(e.target.value)}
                 placeholder="—"
                 aria-label="Stop loss price"
+                className="w-full bg-transparent border-none outline-none tabular font-medium"
                 style={{
-                  width: "100%", background: "transparent", border: "none", outline: "none",
-                  fontSize: "var(--text-sm)", fontFamily: "var(--mono)", fontWeight: 500,
+                  fontSize: "var(--text-sm)",
                   color: "var(--short)",
                 }}
               />
@@ -424,28 +587,32 @@ export function TradeTicket() {
         )}
       </div>
 
-      {/* ── 9. CTA button ── */}
-      <div style={{ padding: "var(--sp-3) var(--sp-3) 0", display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
+      {/* -- 9. CTA button -- */}
+      <div className="flex flex-col gap-2 px-3 pt-3">
         {!address ? (
-          <div style={{
-            textAlign: "center", fontSize: "var(--text-sm)", color: "var(--t3)",
-            padding: "14px 0", border: "1px dashed var(--b2)", borderRadius: "var(--radius-lg)",
-          }}>
+          <div
+            className="text-center py-[14px]"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--t3)",
+              border: "1px dashed var(--b2)",
+              borderRadius: "var(--radius-lg)",
+            }}
+          >
             Connect wallet to trade
           </div>
         ) : needsApproval ? (
           <button
             onClick={handleApprove}
             disabled={isApproveBusy}
+            className="w-full flex items-center justify-center gap-2 font-bold tracking-wider transition-all border-none"
             style={{
-              width: "100%", height: "var(--h-btn-lg)", borderRadius: "var(--radius-lg)",
-              fontSize: "var(--text-sm)", fontWeight: 700, letterSpacing: "0.03em",
+              height: "var(--h-btn-lg)",
+              borderRadius: "var(--radius-lg)",
+              fontSize: "var(--text-sm)",
               cursor: isApproveBusy ? "not-allowed" : "pointer",
               background: "var(--gold)",
               color: "#000",
-              border: "none",
-              transition: "var(--transition-medium)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
             {isApproveBusy && <Spinner />}
@@ -458,16 +625,16 @@ export function TradeTicket() {
           <button
             onClick={handleTrade}
             disabled={!canTrade}
+            className="w-full flex items-center justify-center gap-2 font-bold tracking-wider transition-all"
             style={{
-              width: "100%", height: "var(--h-btn-lg)", borderRadius: "var(--radius-lg)",
-              fontSize: "var(--text-sm)", fontWeight: 700, letterSpacing: "0.03em",
+              height: "var(--h-btn-lg)",
+              borderRadius: "var(--radius-lg)",
+              fontSize: "var(--text-sm)",
               cursor: canTrade ? "pointer" : "not-allowed",
               background: canTrade ? accent : "var(--raised)",
               color: canTrade ? "#fff" : "var(--t3)",
               border: `1px solid ${canTrade ? accentMid : "var(--b1)"}`,
               opacity: canTrade ? 1 : 0.6,
-              transition: "var(--transition-medium)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
             {isBusy && <Spinner />}
@@ -481,14 +648,18 @@ export function TradeTicket() {
         )}
       </div>
 
-      {/* ── Success ── */}
+      {/* -- Success toast -- */}
       {isSuccess && (
-        <div role="status" aria-live="polite" className="animate-slide-up" style={{
-          margin: "var(--sp-2) var(--sp-3) 0",
-          padding: "9px 12px", borderRadius: "var(--radius-md)",
-          background: "var(--long-dim)", border: "1px solid var(--long-mid)",
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 mx-3 mt-2 px-3 py-[9px] animate-slide-up"
+          style={{
+            borderRadius: "var(--radius-md)",
+            background: "var(--long-dim)",
+            border: "1px solid var(--long-mid)",
+          }}
+        >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <circle cx="7" cy="7" r="5.5" stroke="var(--long)" strokeWidth="1.2"/>
             <path d="M4.5 7L6.5 9L9.5 5" stroke="var(--long)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -497,57 +668,157 @@ export function TradeTicket() {
         </div>
       )}
 
-      <div style={{ marginTop: "var(--sp-3)" }}><Divider /></div>
+      <div className="mt-3"><Divider /></div>
 
-      {/* ── 10. Trade details ── */}
-      <div style={{ padding: "var(--sp-2) var(--sp-3)", display: "flex", flexDirection: "column", gap: 7 }}>
+      {/* -- 10. Trade details -- */}
+      <div className="flex flex-col gap-[7px] px-3 py-2">
         <DetailRow label="Liquidation Price" value="—" />
         <DetailRow label="Order Value"       value={collateralNum > 0 ? `$${fmt(posSize)}` : "$0.00"} />
         <DetailRow label="Margin Required"   value={collateralNum > 0 ? `$${fmt(collateralNum)}` : "$0.00"} />
-        <DetailRow label="Slippage"          value="10.0%" pencil />
-        <DetailRow label="Auroc Fees"        value={fees > 0 ? `$${fees.toFixed(4)} / $${(fees * 1.2).toFixed(4)}` : "$0.00 / $0.00"} />
-      </div>
-      <div style={{ padding: "0 var(--sp-3) var(--sp-2)" }}>
-        <span style={{ fontSize: "var(--text-2xs)", color: "var(--t4)" }}>0% fees on all trades</span>
+
+        {/* Slippage row with dropdown */}
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>Slippage</span>
+            <button
+              onClick={() => setShowSlippageMenu(prev => !prev)}
+              aria-label="Configure slippage tolerance"
+              className="tabular flex items-center gap-[3px] cursor-pointer"
+              style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}
+            >
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" className="opacity-40" aria-hidden="true">
+                <path d="M1 8L6.5 3C7 2.5 7.8 2.5 8.1 2.9S8.2 4 7.6 4.5L2.2 8.5L1 8Z" stroke="currentColor" strokeWidth="0.8"/>
+              </svg>
+              {slippage}%
+            </button>
+          </div>
+
+          {showSlippageMenu && (
+            <div
+              className="mt-[6px] p-[6px] flex items-center gap-1 animate-expand"
+              style={{
+                borderRadius: "var(--radius-md)",
+                background: "var(--raised)",
+                border: "1px solid var(--b2)",
+              }}
+            >
+              {SLIPPAGE_PRESETS.map((s) => {
+                const active = slippage === s && customSlippage === "";
+                return (
+                  <button
+                    key={s}
+                    onClick={() => { setSlippage(s); setCustomSlippage(""); }}
+                    aria-pressed={active}
+                    className="flex-1 py-[3px] font-semibold tabular transition-all"
+                    style={{
+                      borderRadius: "var(--radius-sm)",
+                      fontSize: "var(--text-2xs)",
+                      background: active ? accentDim : "transparent",
+                      color: active ? accent : "var(--t3)",
+                      border: `1px solid ${active ? accentMid : "transparent"}`,
+                    }}
+                  >
+                    {s}%
+                  </button>
+                );
+              })}
+              <div
+                className="flex items-center gap-[2px] px-[6px] flex-1"
+                style={{
+                  borderRadius: "var(--radius-sm)",
+                  border: `1px solid ${customSlippage ? accentMid : "var(--b2)"}`,
+                  background: customSlippage ? accentDim : "transparent",
+                }}
+              >
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={customSlippage}
+                  onChange={(e) => handleCustomSlippage(e.target.value)}
+                  placeholder="Custom"
+                  aria-label="Custom slippage percentage"
+                  className="bg-transparent border-none outline-none tabular w-full py-[3px]"
+                  style={{
+                    fontSize: "var(--text-2xs)",
+                    color: customSlippage ? accent : "var(--t3)",
+                  }}
+                />
+                <span
+                  style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}
+                  className="shrink-0"
+                >
+                  %
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DetailRow label="Auroc Fees" value={fees > 0 ? `$${fees.toFixed(4)} / $${(fees * 1.2).toFixed(4)}` : "$0.00 / $0.00"} />
       </div>
 
       <Divider />
 
-      {/* ── 11. Account ── */}
-      <div style={{ padding: "var(--sp-2) var(--sp-3)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 7, fontWeight: 700, color: "#fff" }} aria-hidden="true">$</span>
-            <span className="tabular" style={{ fontSize: "var(--text-sm)", color: "var(--t1)", fontWeight: 500 }}>{address ? fmt(balanceNum) : "0.00"}</span>
+      {/* -- 11. Account -- */}
+      <div className="px-3 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-[6px]">
+            <span
+              className="shrink-0 flex items-center justify-center rounded-full font-bold text-white"
+              style={{
+                width: 14,
+                height: 14,
+                background: "var(--blue)",
+                fontSize: 7,
+              }}
+              aria-hidden="true"
+            >
+              $
+            </span>
+            <span
+              className="tabular font-medium"
+              style={{ fontSize: "var(--text-sm)", color: "var(--t1)" }}
+            >
+              {address ? fmt(balanceNum) : "0.00"}
+            </span>
             <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>USDC</span>
           </div>
-          <button style={{
-            padding: "3px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600,
-            color: "var(--t1)", border: "1px solid var(--b2)", background: "var(--raised)",
-            display: "flex", alignItems: "center", gap: 4, transition: "var(--transition-fast)",
-          }}>
+          <button
+            className="flex items-center gap-1 px-[10px] py-[3px] font-semibold transition-all"
+            style={{
+              borderRadius: "var(--radius-md)",
+              fontSize: "var(--text-xs)",
+              color: "var(--t1)",
+              border: "1px solid var(--b2)",
+              background: "var(--raised)",
+            }}
+          >
             Transfer
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
               <path d="M2 4H6M4.5 2.5L6 4L4.5 5.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
-        <div style={{ marginTop: "var(--sp-2)", display: "flex", flexDirection: "column", gap: 7 }}>
+        <div className="flex flex-col gap-[7px] mt-2">
           <DetailRow label="Maintenance Margin"     value="—" />
           <DetailRow label="Cross Account Leverage" value="—" />
         </div>
       </div>
 
-      {/* ── 12. Footer ── */}
-      <div style={{ padding: "0 var(--sp-3) var(--sp-3)", marginTop: "auto" }}>
+      {/* -- 12. Footer -- */}
+      <div className="px-3 pb-3 mt-auto">
         <Divider />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "var(--sp-2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-[5px]">
             <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>Mark</span>
             <span className="tabular" style={{ fontSize: "var(--text-2xs)", color: "var(--t2)" }}>${markStr}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span className="animate-live" aria-hidden="true" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--long)", display: "inline-block" }} />
+          <div className="flex items-center gap-[5px]">
+            <span
+              className="inline-block rounded-full animate-live"
+              style={{ width: 5, height: 5, background: "var(--long)" }}
+              aria-hidden="true"
+            />
             <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>Arbitrum Sepolia</span>
           </div>
         </div>

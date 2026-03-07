@@ -64,39 +64,36 @@ const MARK_PRICE = "2,941.50";
 
 type BookTab = "Book" | "Trades";
 
-const TH: React.CSSProperties = {
-  fontSize: "var(--text-2xs)",
-  fontWeight: 500,
-  color: "var(--t3)",
-  padding: "4px 8px",
-  textAlign: "right",
-};
-
 export function OrderBook() {
   const [tab, setTab] = useState<BookTab>("Book");
 
   return (
-    <div style={{
-      width: 220, flexShrink: 0,
-      borderLeft: "1px solid var(--b1)", borderRight: "1px solid var(--b1)",
-      display: "flex", flexDirection: "column",
-      background: "var(--surface)", overflow: "hidden",
-    }}>
-      {/* Tab bar */}
-      <div style={{
-        display: "flex", borderBottom: "1px solid var(--b1)", flexShrink: 0,
-      }}>
+    <div
+      className="flex flex-col shrink-0 overflow-hidden"
+      style={{
+        width: 220,
+        borderLeft: "1px solid var(--b1)",
+        background: "var(--surface)",
+      }}
+    >
+      {/* ── Tab bar ── */}
+      <div
+        className="flex shrink-0"
+        style={{ borderBottom: "1px solid var(--b1)" }}
+      >
         {(["Book", "Trades"] as BookTab[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
+            className="flex-1 font-semibold transition-colors duration-100"
             style={{
-              flex: 1, height: 34,
-              fontSize: "var(--text-xs)", fontWeight: 600,
+              height: 34,
+              fontSize: "var(--text-xs)",
               color: tab === t ? "var(--t1)" : "var(--t3)",
-              borderBottom: tab === t ? "2px solid var(--gold)" : "2px solid transparent",
-              transition: "var(--transition-fast)",
+              borderBottom: tab === t
+                ? "2px solid var(--gold)"
+                : "2px solid transparent",
             }}
           >
             {t}
@@ -104,38 +101,54 @@ export function OrderBook() {
         ))}
       </div>
 
+      {/* ── Book view ── */}
       {tab === "Book" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="flex flex-1 flex-col overflow-hidden">
           {/* Column headers */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", flexShrink: 0 }}>
-            <span style={{ ...TH, textAlign: "left" }}>Price (USD)</span>
-            <span style={TH}>Size</span>
-            <span style={TH}>Total</span>
+          <div
+            className="flex shrink-0 uppercase"
+            style={{ padding: "4px 8px", fontSize: "var(--text-2xs)", color: "var(--t3)", fontWeight: 500, letterSpacing: "0.06em" }}
+          >
+            <span className="flex-1 text-left">Price (USD)</span>
+            <span className="w-14 text-right">Size</span>
+            <span className="w-14 text-right">Total</span>
           </div>
 
-          {/* Asks */}
-          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          {/* Asks section */}
+          <div className="flex flex-1 flex-col overflow-y-auto min-h-0">
             {ASKS.map((row, i) => {
               const pct = (row.cumulative / MAX_CUM) * 100;
               return (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "1px 8px", position: "relative", cursor: "default",
-                }}>
+                <div
+                  key={i}
+                  className="group relative flex items-center cursor-default select-none"
+                  style={{ padding: "1.5px 8px" }}
+                >
                   {/* Depth bar */}
-                  <div aria-hidden="true" style={{
-                    position: "absolute", right: 0, top: 0, bottom: 0,
-                    width: `${pct}%`,
-                    background: "rgba(239,68,68,0.08)",
-                    pointerEvents: "none",
-                  }} />
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--short)", zIndex: 1, flexShrink: 0 }}>
+                  <div
+                    aria-hidden="true"
+                    className="absolute right-0 top-0 bottom-0 pointer-events-none"
+                    style={{
+                      width: `${pct}%`,
+                      background: "var(--short-dim)",
+                    }}
+                  />
+                  <span
+                    className="tabular relative z-[1] flex-1 text-left"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--short)" }}
+                  >
                     {row.price.toFixed(2)}
                   </span>
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)", zIndex: 1 }}>
+                  <span
+                    className="tabular relative z-[1] w-14 text-right"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}
+                  >
                     {row.size.toFixed(2)}
                   </span>
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t3)", zIndex: 1 }}>
+                  <span
+                    className="tabular relative z-[1] w-14 text-right"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}
+                  >
                     {row.cumulative.toFixed(2)}
                   </span>
                 </div>
@@ -144,41 +157,63 @@ export function OrderBook() {
           </div>
 
           {/* Spread row */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "4px 8px", background: "var(--raised)", flexShrink: 0,
-            borderTop: "1px solid var(--b1)", borderBottom: "1px solid var(--b1)",
-          }}>
-            <span className="tabular" style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--t1)" }}>
+          <div
+            className="flex items-center justify-between shrink-0"
+            style={{
+              padding: "5px 8px",
+              background: "var(--raised)",
+              borderTop: "1px solid var(--b1)",
+              borderBottom: "1px solid var(--b1)",
+            }}
+          >
+            <span
+              className="tabular font-semibold"
+              style={{ fontSize: "var(--text-sm)", color: "var(--t1)" }}
+            >
               ${MARK_PRICE}
             </span>
-            <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>
+            <span
+              style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}
+            >
               Spread: {SPREAD}
             </span>
           </div>
 
-          {/* Bids */}
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+          {/* Bids section */}
+          <div className="flex flex-1 flex-col overflow-y-auto min-h-0">
             {BIDS.map((row, i) => {
               const pct = (row.cumulative / MAX_CUM) * 100;
               return (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "1px 8px", position: "relative", cursor: "default",
-                }}>
-                  <div aria-hidden="true" style={{
-                    position: "absolute", right: 0, top: 0, bottom: 0,
-                    width: `${pct}%`,
-                    background: "rgba(34,197,94,0.08)",
-                    pointerEvents: "none",
-                  }} />
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--long)", zIndex: 1, flexShrink: 0 }}>
+                <div
+                  key={i}
+                  className="group relative flex items-center cursor-default select-none"
+                  style={{ padding: "1.5px 8px" }}
+                >
+                  {/* Depth bar */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute right-0 top-0 bottom-0 pointer-events-none"
+                    style={{
+                      width: `${pct}%`,
+                      background: "var(--long-dim)",
+                    }}
+                  />
+                  <span
+                    className="tabular relative z-[1] flex-1 text-left"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--long)" }}
+                  >
                     {row.price.toFixed(2)}
                   </span>
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)", zIndex: 1 }}>
+                  <span
+                    className="tabular relative z-[1] w-14 text-right"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}
+                  >
                     {row.size.toFixed(2)}
                   </span>
-                  <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t3)", zIndex: 1 }}>
+                  <span
+                    className="tabular relative z-[1] w-14 text-right"
+                    style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}
+                  >
                     {row.cumulative.toFixed(2)}
                   </span>
                 </div>
@@ -188,34 +223,51 @@ export function OrderBook() {
         </div>
       )}
 
+      {/* ── Trades view ── */}
       {tab === "Trades" && (
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="flex flex-1 flex-col overflow-hidden">
           {/* Column headers */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", flexShrink: 0 }}>
-            <span style={{ ...TH, textAlign: "left" }}>Price</span>
-            <span style={TH}>Size</span>
-            <span style={TH}>Time</span>
+          <div
+            className="flex shrink-0 uppercase"
+            style={{ padding: "4px 8px", fontSize: "var(--text-2xs)", color: "var(--t3)", fontWeight: 500, letterSpacing: "0.06em" }}
+          >
+            <span className="flex-1 text-left">Price</span>
+            <span className="w-14 text-right">Size</span>
+            <span className="w-14 text-right">Time</span>
           </div>
-          {RECENT_TRADES.map((t, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "2px 8px",
-            }}>
-              <span className="tabular" style={{
-                fontSize: "var(--text-xs)",
-                color: t.isLong ? "var(--long)" : "var(--short)",
-                flexShrink: 0,
-              }}>
-                {t.price}
-              </span>
-              <span className="tabular" style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}>
-                {t.size}
-              </span>
-              <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>
-                {t.time}
-              </span>
-            </div>
-          ))}
+
+          {/* Trade rows */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {RECENT_TRADES.map((t, i) => (
+              <div
+                key={i}
+                className="flex items-center cursor-default select-none"
+                style={{ padding: "2px 8px" }}
+              >
+                <span
+                  className="tabular flex-1 text-left"
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: t.isLong ? "var(--long)" : "var(--short)",
+                  }}
+                >
+                  {t.price}
+                </span>
+                <span
+                  className="tabular w-14 text-right"
+                  style={{ fontSize: "var(--text-xs)", color: "var(--t2)" }}
+                >
+                  {t.size}
+                </span>
+                <span
+                  className="tabular w-14 text-right"
+                  style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}
+                >
+                  {t.time}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

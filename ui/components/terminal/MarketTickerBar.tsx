@@ -20,12 +20,12 @@ const MARKETS_CFG = [
 ] as const;
 
 function Sep() {
-  return <div aria-hidden="true" style={{ width: 1, height: 26, background: "var(--b1)", flexShrink: 0 }} />;
+  return <div aria-hidden="true" className="w-px shrink-0" style={{ height: 26, background: "var(--b1)" }} />;
 }
 
 function StatCell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+    <div className="flex flex-col gap-0.5 shrink-0">
       <span className="label-upper">{label}</span>
       <span className="tabular" style={{ fontSize: "var(--text-xs)", color: color ?? "var(--t2)" }}>
         {value}
@@ -41,15 +41,17 @@ export function MarketTickerBar() {
   const markStr = marketInfo && marketInfo.markPrice > 0n ? formatPrice(marketInfo.markPrice) : null;
 
   return (
-    <div style={{
-      height: "var(--h-market-header)",
-      display: "flex", alignItems: "center", gap: 14,
-      padding: "0 14px",
-      background: "var(--surface)", borderBottom: "1px solid var(--b1)",
-      flexShrink: 0, overflow: "hidden",
-    }}>
+    <div
+      className="flex items-center gap-3.5 shrink-0 overflow-hidden"
+      style={{
+        height: "var(--h-market-header)",
+        padding: "0 14px",
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--b1)",
+      }}
+    >
       {/* Market selector */}
-      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+      <div className="flex gap-1 shrink-0">
         {AVAILABLE_TERMINAL_MARKETS.map((m) => {
           const active = m.id === market.id;
           return (
@@ -57,14 +59,15 @@ export function MarketTickerBar() {
               key={m.id}
               type="button"
               onClick={() => setMarket(m)}
+              className="flex items-center gap-1.5 transition-colors"
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "4px 10px", borderRadius: "var(--radius-md)",
-                fontSize: "var(--text-xs)", fontWeight: 600,
+                padding: "4px 10px",
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 600,
                 background: active ? "var(--raised)" : "transparent",
                 color: active ? "var(--t1)" : "var(--t3)",
                 border: `1px solid ${active ? "var(--b3)" : "transparent"}`,
-                transition: "var(--transition-fast)",
               }}
             >
               <AssetIcon symbol={m.symbol} color={m.color} size={16} />
@@ -77,23 +80,29 @@ export function MarketTickerBar() {
       <Sep />
 
       {/* Mark price + 24h change */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+      <div className="flex items-baseline gap-2 shrink-0">
         {isLoading || !markStr ? (
           <div className="animate-shimmer skel skel-sm" style={{ height: 22, width: 100 }} />
         ) : (
           <>
-            <span className="tabular" style={{
-              fontSize: "var(--text-xl)",
-              fontWeight: "var(--fw-semibold)" as unknown as number,
-              color: "var(--t1)", letterSpacing: "-0.04em",
-            }}>
+            <span
+              className="tabular"
+              style={{
+                fontSize: "var(--text-xl)",
+                fontWeight: 600,
+                color: "var(--t1)",
+                letterSpacing: "-0.04em",
+              }}
+            >
               ${markStr}
             </span>
-            <span style={{
-              fontSize: "var(--text-sm)",
-              fontWeight: "var(--fw-medium)" as unknown as number,
-              color: cfg.changeUp ? "var(--long)" : "var(--short)",
-            }}>
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+                color: cfg.changeUp ? "var(--long)" : "var(--short)",
+              }}
+            >
               {cfg.change}
             </span>
           </>
@@ -115,19 +124,23 @@ export function MarketTickerBar() {
       <Sep />
       <StatCell label="Open Interest" value={cfg.oi} />
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
 
       {marketInfo && (
-        <div style={{
-          padding: "2px 8px", borderRadius: "var(--radius-sm)",
-          fontSize: "var(--text-2xs)",
-          fontWeight: "var(--fw-semibold)" as unknown as number,
-          background: marketInfo.regime === Regime.OPEN ? "var(--long-dim)" : "var(--warning-dim)",
-          color: marketInfo.regime === Regime.OPEN ? "var(--long)" : "var(--warning)",
-          border: `1px solid ${marketInfo.regime === Regime.OPEN ? "var(--long-mid)" : "var(--warning-mid)"}`,
-          letterSpacing: "0.06em", flexShrink: 0,
-        }}>
-          {marketInfo.regime === Regime.OPEN ? "● OPEN" : "● OFF-HOURS"}
+        <div
+          className="shrink-0"
+          style={{
+            padding: "2px 8px",
+            borderRadius: "var(--radius-sm)",
+            fontSize: "var(--text-2xs)",
+            fontWeight: 600,
+            background: marketInfo.regime === Regime.OPEN ? "var(--long-dim)" : "var(--warning-dim)",
+            color: marketInfo.regime === Regime.OPEN ? "var(--long)" : "var(--warning)",
+            border: `1px solid ${marketInfo.regime === Regime.OPEN ? "var(--long-mid)" : "var(--warning-mid)"}`,
+            letterSpacing: "0.06em",
+          }}
+        >
+          {marketInfo.regime === Regime.OPEN ? "OPEN" : "OFF-HOURS"}
         </div>
       )}
     </div>
