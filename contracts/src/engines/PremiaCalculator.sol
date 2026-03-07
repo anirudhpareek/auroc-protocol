@@ -5,6 +5,11 @@ import { MathLib } from "../libraries/MathLib.sol";
 import { IIndexEngine } from "../interfaces/IIndexEngine.sol";
 import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
+/// @notice Minimal IV surface interface — avoids circular imports with VolSurface
+interface IVolSurface {
+    function getATMIV(bytes32 marketId) external view returns (uint256);
+}
+
 /// @title PremiaCalculator
 /// @notice Risk-based pricing engine inspired by Vest's zkRisk
 /// @dev Calculates trade premia based on marginal risk contribution
@@ -31,6 +36,9 @@ contract PremiaCalculator is Ownable2Step {
 
     /// @notice Index engine for confidence data
     IIndexEngine public indexEngine;
+
+    /// @notice Optional: IV surface for options-implied vol (address(0) = disabled)
+    IVolSurface public ivSurface;
 
     /// @notice Base premia rate (WAD)
     uint256 public basePremiaRate;
@@ -263,9 +271,15 @@ contract PremiaCalculator is Ownable2Step {
         uint256 concentrationRisk = state.concentration.mulWad(concentrationMultiplier);
         score += concentrationRisk;
 
-        // Volatility risk: higher if current vol > baseline
-        if (state.volatility > params.baseVolatility && params.baseVolatility > 0) {
-            uint256 volRatio = (state.volatility * WAD) / params.baseVolatility;
+        // Volatility risk: use IV surface if available, else fall back to portfolio vol
+        uint256 effectiveVol = state.volatility;
+        if (address(ivSurface) != address(0)) {
+            try ivSurface.getATMIV(marketId) returns (uint256 atmIv) {
+                if (atmIv > 0) effectiveVol = atmIv;
+            } catch {}
+        }
+        if (effectiveVol > params.baseVolatility && params.baseVolatility > 0) {
+            uint256 volRatio = (effectiveVol * WAD) / params.baseVolatility;
             uint256 volRisk = (volRatio - WAD).mulWad(volatilityMultiplier);
             score += volRisk;
         }
@@ -349,5 +363,10 @@ contract PremiaCalculator is Ownable2Step {
     /// @notice Set index engine
     function setIndexEngine(address _indexEngine) external onlyOwner {
         indexEngine = IIndexEngine(_indexEngine);
+    }
+
+    /// @notice Set IV surface (address(0) disables options-implied vol)
+    function setIVSurface(address _ivSurface) external onlyOwner {
+        ivSurface = IVolSurface(_ivSurface);
     }
 }
