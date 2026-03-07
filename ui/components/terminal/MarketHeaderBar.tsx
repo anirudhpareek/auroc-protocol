@@ -106,18 +106,41 @@ export function MarketHeaderBar() {
 
       <div style={{ flex: 1 }} />
 
-      {marketInfo && (
-        <div style={{
-          padding: "2px 8px", borderRadius: "var(--radius-sm)",
-          fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)" as unknown as number,
-          background: marketInfo.regime === Regime.OPEN ? "var(--long-dim)" : "var(--warning-dim)",
-          color: marketInfo.regime === Regime.OPEN ? "var(--long)" : "var(--warning)",
-          border: `1px solid ${marketInfo.regime === Regime.OPEN ? "var(--long-mid)" : "var(--warning-mid)"}`,
-          letterSpacing: "0.06em",
-        }}>
-          {marketInfo.regime === Regime.OPEN ? "● OPEN" : "● OFF-HOURS"}
-        </div>
-      )}
+      {marketInfo && (() => {
+        const isOpen       = marketInfo.regime === Regime.OPEN;
+        const isOffHours   = marketInfo.regime === Regime.OFF_HOURS;
+        const isTransition = marketInfo.regime === Regime.TRANSITION;
+        const isStress     = marketInfo.regime === Regime.STRESS;
+        const optionsSuspended = isOffHours || isStress;
+
+        const regimeBg  = isOpen ? "var(--long-dim)"    : isStress ? "var(--short-dim)"    : "var(--warning-dim)";
+        const regimeFg  = isOpen ? "var(--long)"        : isStress ? "var(--short)"        : "var(--warning)";
+        const regimeBdr = isOpen ? "var(--long-mid)"    : isStress ? "var(--short-mid)"    : "var(--warning-mid)";
+        const regimeTxt = isOpen ? "● OPEN" : isStress ? "● STRESS" : isTransition ? "● TRANSITION" : "● OFF-HOURS";
+
+        return (
+          <div className="flex items-center gap-1.5">
+            <div style={{
+              padding: "2px 8px", borderRadius: "var(--radius-sm)",
+              fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)" as unknown as number,
+              background: regimeBg, color: regimeFg, border: `1px solid ${regimeBdr}`,
+              letterSpacing: "0.06em",
+            }}>
+              {regimeTxt}
+            </div>
+            {optionsSuspended && (
+              <div style={{
+                padding: "2px 8px", borderRadius: "var(--radius-sm)",
+                fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)" as unknown as number,
+                background: "var(--short-dim)", color: "var(--short)",
+                border: "1px solid var(--short-mid)", letterSpacing: "0.06em",
+              }}>
+                OPTIONS SUSPENDED
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

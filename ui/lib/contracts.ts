@@ -190,3 +190,140 @@ export const ERC20Abi = [
     outputs: [{ type: 'uint256' }],
   },
 ] as const;
+
+// ─── Options contracts ────────────────────────────────────────────────────────
+
+export const CONTRACTS_V3 = {
+  optionsPool:        process.env.NEXT_PUBLIC_OPTIONS_POOL_ADDRESS       as Address || '0x0',
+  collateralTracker:  process.env.NEXT_PUBLIC_COLLATERAL_TRACKER_ADDRESS as Address || '0x0',
+  volSurface:         process.env.NEXT_PUBLIC_VOL_SURFACE_ADDRESS        as Address || '0x0',
+  realizedVolOracle:  process.env.NEXT_PUBLIC_VOL_ORACLE_ADDRESS         as Address || '0x0',
+} as const;
+
+export const OptionsPoolAbi = [
+  {
+    name: 'mintOption',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'legs',
+        type: 'tuple[]',
+        components: [
+          { name: 'marketId',   type: 'bytes32' },
+          { name: 'strike',     type: 'uint256' },
+          { name: 'optionType', type: 'uint8'   },
+          { name: 'side',       type: 'uint8'   },
+          { name: 'notional',   type: 'uint256' },
+        ],
+      },
+      { name: 'maxCost', type: 'uint256' },
+    ],
+    outputs: [{ name: 'positionId', type: 'bytes32' }],
+  },
+  {
+    name: 'burnOption',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'positionId', type: 'bytes32' },
+      { name: 'minPayout',  type: 'uint256' },
+    ],
+    outputs: [{ name: 'payout', type: 'uint256' }],
+  },
+  {
+    name: 'getGreeks',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'marketId', type: 'bytes32' },
+      { name: 'strike',   type: 'uint256' },
+      { name: 'isCall',   type: 'bool'    },
+    ],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'delta',   type: 'int256'  },
+          { name: 'gamma',   type: 'int256'  },
+          { name: 'theta',   type: 'int256'  },
+          { name: 'vega',    type: 'int256'  },
+          { name: 'iv',      type: 'uint256' },
+          { name: 'premium', type: 'uint256' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getRequiredCollateral',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      {
+        name: 'legs',
+        type: 'tuple[]',
+        components: [
+          { name: 'marketId',   type: 'bytes32' },
+          { name: 'strike',     type: 'uint256' },
+          { name: 'optionType', type: 'uint8'   },
+          { name: 'side',       type: 'uint8'   },
+          { name: 'notional',   type: 'uint256' },
+        ],
+      },
+    ],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'buyerPremium',     type: 'uint256' },
+          { name: 'sellerCollateral', type: 'uint256' },
+          { name: 'total',            type: 'uint256' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getTraderOptions',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'trader', type: 'address' }],
+    outputs: [{ type: 'bytes32[]' }],
+  },
+  {
+    name: 'getOptionPosition',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'positionId', type: 'bytes32' }],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'positionId',      type: 'bytes32' },
+          { name: 'owner',           type: 'address' },
+          { name: 'legCount',        type: 'uint256' },
+          {
+            name: 'legs', type: 'tuple[4]',
+            components: [
+              { name: 'marketId',   type: 'bytes32' },
+              { name: 'strike',     type: 'uint256' },
+              { name: 'optionType', type: 'uint8'   },
+              { name: 'side',       type: 'uint8'   },
+              { name: 'notional',   type: 'uint256' },
+            ],
+          },
+          { name: 'collateralLocked', type: 'uint256' },
+          { name: 'premiumPaid',      type: 'uint256' },
+          { name: 'openedAt',         type: 'uint256' },
+          { name: 'regimeAtOpen',     type: 'uint8'   },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getCurrentValue',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'positionId', type: 'bytes32' }],
+    outputs: [{ type: 'uint256' }],
+  },
+] as const;

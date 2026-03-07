@@ -4,10 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { CONTRACTS, PerpEngineAbi } from "@/lib/contracts";
 import { usePositions } from "@/hooks/usePositions";
+import { useOptionPositions } from "@/hooks/useOptions";
 import { formatPrice, formatPnl, formatUsdc, formatLeverage } from "@/lib/format";
 import { useTerminal } from "./TerminalContext";
+import { GreeksPanel } from "./GreeksPanel";
 
-const TABS = ["Positions", "Active Orders", "Fills", "Funding", "Activity"] as const;
+const TABS = ["Positions", "Options", "Active Orders", "Fills", "Funding", "Activity"] as const;
 
 const FUNDING_HISTORY = [
   { market: "XAU/USD", rate: "-0.0031%", up: false, time: "08:00 UTC", interval: "8h" },
@@ -20,7 +22,7 @@ function formatMarketId(id: `0x${string}`): string {
     const hex = id.replace("0x", "").replace(/00+$/, "");
     return Buffer.from(hex, "hex").toString("utf-8");
   } catch {
-    return "—";
+    return "\u2014";
   }
 }
 
@@ -30,48 +32,27 @@ function CloseBtn({ positionId }: { positionId: `0x${string}` }) {
   const busy = isPending || confirming;
   return (
     <button
-      onClick={() => writeContract({ address: CONTRACTS.perpEngine, abi: PerpEngineAbi, functionName: "closePosition", args: [positionId] })}
+      onClick={() =>
+        writeContract({
+          address: CONTRACTS.perpEngine,
+          abi: PerpEngineAbi,
+          functionName: "closePosition",
+          args: [positionId],
+        })
+      }
       disabled={busy}
+      className="px-2 py-0.5 text-[length:var(--text-2xs)] font-semibold rounded-[var(--radius-sm)] border transition-[color,background-color,border-color,opacity] duration-100"
       style={{
-        padding: "2px 9px", borderRadius: "var(--radius-sm)",
-        fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)",
-        background: "var(--short-btn)", color: "var(--short)",
-        border: "1px solid var(--short-mid)",
-        cursor: busy ? "not-allowed" : "pointer",
+        background: "var(--short-btn)",
+        color: "var(--short)",
+        borderColor: "var(--short-mid)",
         opacity: busy ? 0.4 : 1,
-        transition: "var(--transition-fast)",
       }}
     >
-      {busy ? "…" : "Close"}
+      {busy ? "\u2026" : "Close"}
     </button>
   );
 }
-
-const TH_STYLE: React.CSSProperties = {
-  padding: "5px 10px",
-  fontSize: "var(--text-2xs)",
-  fontWeight: "var(--fw-medium)" as unknown as number,
-  color: "var(--t3)",
-  textAlign: "left",
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-  whiteSpace: "nowrap",
-};
-
-const TD_STYLE: React.CSSProperties = {
-  padding: "0 10px",
-  fontSize: "var(--text-xs)",
-  color: "var(--t2)",
-  fontFamily: "var(--mono)",
-  fontVariantNumeric: "tabular-nums",
-  whiteSpace: "nowrap",
-  height: "var(--cell-h, 28px)",
-};
-
-const TD_NUM: React.CSSProperties = {
-  ...TD_STYLE,
-  textAlign: "right",
-};
 
 interface PosEntry {
   id: `0x${string}`;
@@ -87,41 +68,54 @@ interface PosEntry {
 function PositionRow({ pos }: { pos: PosEntry }) {
   const { str: pnlStr, isPositive } = formatPnl(pos.unrealizedPnL);
   const rawSize = pos.size < 0n ? -pos.size : pos.size;
-  const market = pos.position?.assetId ? formatMarketId(pos.position.assetId) : "—";
-  const [hovered, setHovered] = useState(false);
+  const market = pos.position?.assetId ? formatMarketId(pos.position.assetId) : "\u2014";
 
   return (
-    <tr
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? "var(--hover)" : "transparent",
-        transition: "background-color 0.1s",
-        cursor: "default",
-      }}
-    >
-      <td style={{ ...TD_STYLE, paddingLeft: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{
-            fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)" as unknown as number,
-            padding: "1px 5px", borderRadius: "var(--radius-sm)",
-            background: pos.isLong ? "var(--long-dim)" : "var(--short-dim)",
-            color: pos.isLong ? "var(--long)" : "var(--short)",
-          }}>
+    <tr className="tr-hover">
+      <td className="px-2.5 pl-3.5 text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="text-[length:var(--text-2xs)] font-semibold px-[5px] py-px rounded-[var(--radius-sm)]"
+            style={{
+              background: pos.isLong ? "var(--long-dim)" : "var(--short-dim)",
+              color: pos.isLong ? "var(--long)" : "var(--short)",
+            }}
+          >
             {pos.isLong ? "L" : "S"}
           </span>
-          <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--fw-medium)" as unknown as number, color: "var(--t1)" }}>{market}</span>
-          <span style={{ fontSize: "var(--text-2xs)", color: "var(--t3)" }}>{formatLeverage(pos.size, pos.margin)}</span>
+          <span className="text-[length:var(--text-xs)] font-medium" style={{ color: "var(--t1)" }}>
+            {market}
+          </span>
+          <span className="text-[length:var(--text-2xs)]" style={{ color: "var(--t3)" }}>
+            {formatLeverage(pos.size, pos.margin)}
+          </span>
         </div>
       </td>
-      <td style={TD_NUM}>${formatUsdc(rawSize)}</td>
-      <td style={TD_NUM}>${formatUsdc(rawSize)}</td>
-      <td style={TD_NUM}>${formatPrice(pos.entryPrice)}</td>
-      <td style={{ ...TD_NUM, color: "var(--t3)" }}>—</td>
-      <td style={{ ...TD_NUM, color: isPositive ? "var(--long)" : "var(--short)", fontWeight: "var(--fw-medium)" as unknown as number }}>{pnlStr}</td>
-      <td style={{ ...TD_NUM, color: "var(--t3)" }}>—</td>
-      <td style={TD_NUM}>${formatUsdc(pos.margin)}</td>
-      <td style={{ ...TD_STYLE, paddingRight: 14, textAlign: "right" }}>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+        ${formatUsdc(rawSize)}
+      </td>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+        ${formatUsdc(rawSize)}
+      </td>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+        ${formatPrice(pos.entryPrice)}
+      </td>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t3)" }}>
+        &mdash;
+      </td>
+      <td
+        className="tabular px-2.5 text-right text-[length:var(--text-xs)] font-medium whitespace-nowrap h-[var(--cell-h,28px)]"
+        style={{ color: isPositive ? "var(--long)" : "var(--short)" }}
+      >
+        {pnlStr}
+      </td>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t3)" }}>
+        &mdash;
+      </td>
+      <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+        ${formatUsdc(pos.margin)}
+      </td>
+      <td className="px-2.5 pr-3.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]">
         <CloseBtn positionId={pos.id} />
       </td>
     </tr>
@@ -142,10 +136,16 @@ const TABLE_HEADERS = [
 
 function EmptyState({ icon, label, sub }: { icon: string; label: string; sub?: string }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 4 }}>
-      <span style={{ fontSize: "var(--text-xl)", opacity: 0.1 }}>{icon}</span>
-      <span style={{ fontSize: "var(--text-xs)", color: "var(--t3)" }}>{label}</span>
-      {sub && <span style={{ fontSize: "var(--text-2xs)", color: "var(--t4)" }}>{sub}</span>}
+    <div className="flex flex-col items-center justify-center h-full gap-1">
+      <span className="text-[length:var(--text-xl)] opacity-10">{icon}</span>
+      <span className="text-[length:var(--text-xs)]" style={{ color: "var(--t3)" }}>
+        {label}
+      </span>
+      {sub && (
+        <span className="text-[length:var(--text-2xs)]" style={{ color: "var(--t4)" }}>
+          {sub}
+        </span>
+      )}
     </div>
   );
 }
@@ -154,6 +154,7 @@ export function BottomDockTabs() {
   const { bottomTab, setBottomTab } = useTerminal();
   const { address } = useAccount();
   const { positions, isLoading } = usePositions();
+  const { positionIds: optionIds } = useOptionPositions();
   const [height, setHeight] = useState(200);
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
@@ -185,55 +186,53 @@ export function BottomDockTabs() {
 
   return (
     <div
-      className="bottom-dock-tabs"
+      className="bottom-dock-tabs shrink-0 flex flex-col relative"
       style={{
-        height, flexShrink: 0,
+        height,
         borderTop: "1px solid var(--b1)",
-        display: "flex", flexDirection: "column",
         background: "var(--surface)",
-        position: "relative",
       }}
     >
       {/* Drag handle */}
       <div
         onMouseDown={onDragStart}
         title="Drag to resize"
-        style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 4,
-          cursor: "ns-resize", zIndex: 10,
-          transition: "background-color 0.15s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--gold)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize z-10 transition-colors duration-150 hover:bg-[var(--gold)]"
       />
 
       {/* Tab bar */}
-      <div style={{
-        display: "flex", alignItems: "center",
-        borderBottom: "1px solid var(--b1)", flexShrink: 0,
-        padding: "0 4px", height: 34,
-      }}>
+      <div
+        className="flex items-center shrink-0 px-1 h-[34px]"
+        style={{ borderBottom: "1px solid var(--b1)" }}
+      >
         {TABS.map((t) => {
           const active = t === bottomTab;
           return (
-            <button key={t} onClick={() => setBottomTab(t)} style={{
-              padding: "0 11px", height: 34,
-              fontSize: "var(--text-xs)",
-              fontWeight: active ? "var(--fw-medium)" as unknown as number : "var(--fw-regular)" as unknown as number,
-              color: active ? "var(--t1)" : "var(--t3)",
-              borderBottom: active ? "2px solid var(--gold)" : "2px solid transparent",
-              background: "none",
-              transition: "color 0.1s, border-color 0.1s",
-              display: "flex", alignItems: "center", gap: 5,
-            }}>
+            <button
+              key={t}
+              onClick={() => setBottomTab(t)}
+              className="flex items-center gap-[5px] px-[11px] h-[34px] text-[length:var(--text-xs)] transition-[color,border-color] duration-100 border-b-2"
+              style={{
+                fontWeight: active ? "var(--fw-medium)" : "var(--fw-regular)",
+                color: active ? "var(--t1)" : "var(--t3)",
+                borderBottomColor: active ? "var(--gold)" : "transparent",
+              }}
+            >
               {t}
               {t === "Positions" && positions.length > 0 && (
-                <span style={{
-                  fontSize: "var(--text-2xs)", fontWeight: "var(--fw-semibold)" as unknown as number,
-                  padding: "1px 4px", borderRadius: 10,
-                  background: "var(--raised)", color: "var(--t3)",
-                }}>
+                <span
+                  className="text-[length:var(--text-2xs)] font-semibold px-1 py-px rounded-full"
+                  style={{ background: "var(--raised)", color: "var(--t3)" }}
+                >
                   {positions.length}
+                </span>
+              )}
+              {t === "Options" && optionIds.length > 0 && (
+                <span
+                  className="text-[length:var(--text-2xs)] font-semibold px-1 py-px rounded-full"
+                  style={{ background: "var(--raised)", color: "var(--gold)" }}
+                >
+                  {optionIds.length}
                 </span>
               )}
             </button>
@@ -242,28 +241,34 @@ export function BottomDockTabs() {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
+      <div className="flex-1 overflow-auto min-h-0">
 
         {bottomTab === "Positions" && (
           !address ? (
-            <EmptyState icon="◇" label="Connect wallet to view positions" />
+            <EmptyState icon="\u25C7" label="Connect wallet to view positions" />
           ) : isLoading ? (
-            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 5 }}>
-              {[0, 1].map(i => <div key={i} className="animate-shimmer" style={{ height: 28, borderRadius: 4 }} />)}
+            <div className="p-3 flex flex-col gap-[5px]">
+              {[0, 1].map(i => (
+                <div key={i} className="animate-shimmer h-7 rounded-[var(--radius-sm)]" />
+              ))}
             </div>
           ) : positions.length === 0 ? (
-            <EmptyState icon="◇" label="No Open Positions" sub="You don't have any open perpetual positions." />
+            <EmptyState icon="\u25C7" label="No Open Positions" sub="You don't have any open perpetual positions." />
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
+            <table className="w-full border-collapse table-auto">
               <thead className="sticky-th">
                 <tr>
                   {TABLE_HEADERS.map((h, i) => (
-                    <th key={i} style={{
-                      ...TH_STYLE,
-                      paddingLeft: i === 0 ? 14 : 10,
-                      paddingRight: i === TABLE_HEADERS.length - 1 ? 14 : 10,
-                      textAlign: h.align,
-                    }}>
+                    <th
+                      key={i}
+                      className={`
+                        py-[5px] px-2.5 text-[length:var(--text-2xs)] font-medium uppercase tracking-[0.04em] whitespace-nowrap
+                        ${i === 0 ? "pl-3.5 text-left" : ""}
+                        ${i === TABLE_HEADERS.length - 1 ? "pr-3.5" : ""}
+                        ${h.align === "right" ? "text-right" : "text-left"}
+                      `}
+                      style={{ color: "var(--t3)" }}
+                    >
                       {h.label}
                     </th>
                   ))}
@@ -276,34 +281,60 @@ export function BottomDockTabs() {
           )
         )}
 
+        {bottomTab === "Options" && (
+          <GreeksPanel />
+        )}
+
         {bottomTab === "Active Orders" && (
-          <EmptyState icon="◈" label="No Active Orders" sub="Limit orders will appear here." />
+          <EmptyState icon="\u25C8" label="No Active Orders" sub="Limit orders will appear here." />
         )}
 
         {bottomTab === "Fills" && (
-          <EmptyState icon="◉" label="No Fills" sub="Filled orders will appear here." />
+          <EmptyState icon="\u25C9" label="No Fills" sub="Filled orders will appear here." />
         )}
 
         {bottomTab === "Funding" && (
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
+          <table className="w-full border-collapse table-auto">
             <thead className="sticky-th">
               <tr>
                 {["Market", "Funding Rate", "Time", "Interval"].map((h, i) => (
-                  <th key={i} style={{
-                    ...TH_STYLE,
-                    paddingLeft: i === 0 ? 14 : 10,
-                    textAlign: i === 0 ? "left" : "right",
-                  }}>{h}</th>
+                  <th
+                    key={i}
+                    className={`
+                      py-[5px] px-2.5 text-[length:var(--text-2xs)] font-medium uppercase tracking-[0.04em] whitespace-nowrap
+                      ${i === 0 ? "pl-3.5 text-left" : "text-right"}
+                    `}
+                    style={{ color: "var(--t3)" }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {FUNDING_HISTORY.map((row, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid var(--b1)" }}>
-                  <td style={{ ...TD_STYLE, paddingLeft: 14, color: "var(--t1)", fontFamily: "inherit" }}>{row.market}</td>
-                  <td style={{ ...TD_NUM, color: row.up ? "var(--long)" : "var(--short)" }}>{row.rate}</td>
-                  <td style={TD_NUM}>{row.time}</td>
-                  <td style={{ ...TD_NUM, paddingRight: 14, color: "var(--t3)" }}>{row.interval}</td>
+                  <td
+                    className="px-2.5 pl-3.5 text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]"
+                    style={{ color: "var(--t1)" }}
+                  >
+                    {row.market}
+                  </td>
+                  <td
+                    className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]"
+                    style={{ color: row.up ? "var(--long)" : "var(--short)" }}
+                  >
+                    {row.rate}
+                  </td>
+                  <td className="tabular px-2.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]" style={{ color: "var(--t2)" }}>
+                    {row.time}
+                  </td>
+                  <td
+                    className="tabular px-2.5 pr-3.5 text-right text-[length:var(--text-xs)] whitespace-nowrap h-[var(--cell-h,28px)]"
+                    style={{ color: "var(--t3)" }}
+                  >
+                    {row.interval}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -311,7 +342,7 @@ export function BottomDockTabs() {
         )}
 
         {bottomTab === "Activity" && (
-          <EmptyState icon="◌" label="No Activity" sub="Recent protocol activity will appear here." />
+          <EmptyState icon="\u25CC" label="No Activity" sub="Recent protocol activity will appear here." />
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { MARKETS } from "@/lib/contracts";
+import type { Instrument } from "@/types";
 
 export interface TerminalMarket {
   id: `0x${string}`;
@@ -29,16 +30,20 @@ interface TerminalContextValue {
   activeDrawTool: string;
   setActiveDrawTool: (t: string) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
+  /** Active instrument: perp trading or options trading */
+  activeInstrument: Instrument;
+  setActiveInstrument: (i: Instrument) => void;
 }
 
 const TerminalContext = createContext<TerminalContextValue | null>(null);
 
 export function TerminalProvider({ children }: { children: ReactNode }) {
-  const [market, setMarket] = useState<TerminalMarket>(AVAILABLE_TERMINAL_MARKETS[0]);
-  const [density, setDensity] = useState<Density>("compact");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [bottomTab, setBottomTab] = useState("Positions");
-  const [activeDrawTool, setActiveDrawTool] = useState("cursor");
+  const [market, setMarket]                   = useState<TerminalMarket>(AVAILABLE_TERMINAL_MARKETS[0]);
+  const [density, setDensity]                 = useState<Density>("compact");
+  const [sidebarOpen, setSidebarOpen]         = useState(true);
+  const [bottomTab, setBottomTab]             = useState("Positions");
+  const [activeDrawTool, setActiveDrawTool]   = useState("cursor");
+  const [activeInstrument, setActiveInstrument] = useState<Instrument>("perp");
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   return (
@@ -49,6 +54,7 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
       bottomTab, setBottomTab,
       activeDrawTool, setActiveDrawTool,
       searchRef,
+      activeInstrument, setActiveInstrument,
     }}>
       {children}
     </TerminalContext.Provider>

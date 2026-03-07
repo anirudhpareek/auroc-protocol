@@ -49,3 +49,44 @@ export interface MarketInfo {
   regime: Regime;
   confidence: bigint;
 }
+
+// ─── Options types ────────────────────────────────────────────────────────────
+
+export enum OptionType { CALL = 0, PUT = 1 }
+export enum OptionSide { LONG = 0, SHORT = 1 }
+
+export interface OptionLeg {
+  marketId: `0x${string}`;
+  strike: bigint;
+  optionType: OptionType;
+  side: OptionSide;
+  notional: bigint;
+}
+
+export interface OptionPosition {
+  positionId: `0x${string}`;
+  owner: `0x${string}`;
+  legCount: bigint;
+  legs: OptionLeg[];
+  collateralLocked: bigint;
+  premiumPaid: bigint;
+  openedAt: bigint;
+  regimeAtOpen: number;
+}
+
+export interface Greeks {
+  delta: bigint;
+  gamma: bigint;
+  theta: bigint;
+  vega: bigint;
+  iv: bigint;
+  premium: bigint;
+}
+
+export interface CollateralRequirement {
+  buyerPremium: bigint;
+  sellerCollateral: bigint;
+  total: bigint;
+}
+
+export type Instrument = 'perp' | 'options';
